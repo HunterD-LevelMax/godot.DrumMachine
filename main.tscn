@@ -1,0 +1,64 @@
+[gd_scene load_steps=6 format=3 uid="uid://cv64bqrm3paas"]
+
+[ext_resource type="Script" uid="uid://bd44mapexh0mw" path="res://main.gd" id="1_1bvp3"]
+[ext_resource type="AudioStream" uid="uid://d2rsv8omlq6xw" path="res://gabber-x-jumpstyle-kick_G_minor.wav" id="2_lquwl"]
+[ext_resource type="AudioStream" uid="uid://wg8sosneiwut" path="res://snare-basic_C_minor.wav" id="3_lquwl"]
+[ext_resource type="AudioStream" uid="uid://bxlkc8i25krhf" path="res://lil-jon-type-open-hi-hat_A#_minor.wav" id="4_lquwl"]
+[ext_resource type="AudioStream" uid="uid://beci8tqn45oyx" path="res://basovaya-vibratsiya-41855.ogg" id="5_lquwl"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_1bvp3")
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 0.5
+
+[node name="KickPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_lquwl")
+
+[node name="SnarePlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_lquwl")
+
+[node name="HatPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_lquwl")
+
+[node name="StepGrid" type="GridContainer" parent="."]
+layout_mode = 0
+offset_right = 1153.0
+offset_bottom = 648.0
+columns = 8
+
+[node name="BassPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_lquwl")
+
+[node name="IncreaseTempoButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 21.0
+offset_top = 491.0
+offset_right = 88.0
+offset_bottom = 545.0
+theme_override_font_sizes/font_size = 20
+text = "+"
+
+[node name="DecreaseTempoButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 138.0
+offset_top = 493.0
+offset_right = 197.0
+offset_bottom = 549.0
+theme_override_font_sizes/font_size = 20
+text = "-"
+
+[node name="TempoLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 431.0
+offset_right = 174.0
+offset_bottom = 490.0
+text = "120 bpm
+"
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
