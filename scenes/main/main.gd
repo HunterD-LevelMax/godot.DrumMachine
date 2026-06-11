@@ -54,10 +54,6 @@ var _playhead_glow: ColorRect
 
 var _flash_tweens: Dictionary = {}
 
-var _pinch_active: bool = false
-var _pinch_start_dist: float = 0.0
-var _pinch_start_btn_size: float = 0.0
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 func _ready() -> void:
