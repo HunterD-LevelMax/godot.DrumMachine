@@ -1,10 +1,6 @@
 [gd_scene format=3 uid="uid://cv64bqrm3paas"]
 
 [ext_resource type="Script" uid="uid://bd44mapexh0mw" path="res://scenes/main/main.gd" id="1_1bvp3"]
-[ext_resource type="AudioStream" uid="uid://bvqf6h1jlmmdg" path="res://assets/sounds/kick/kick_syth.wav" id="2_tbgi4"]
-[ext_resource type="AudioStream" uid="uid://wg8sosneiwut" path="res://assets/sounds/snare/snare.wav" id="3_lquwl"]
-[ext_resource type="AudioStream" uid="uid://bxlkc8i25krhf" path="res://assets/sounds/hat/hat.wav" id="4_lquwl"]
-[ext_resource type="AudioStream" uid="uid://cbx1ij1w0qs5v" path="res://assets/sounds/kick/kick_deep_bass.wav" id="5_tbgi4"]
 
 [sub_resource type="StyleBoxFlat" id="panel_bg"]
 bg_color = Color(0.038, 0.038, 0.088, 0.96)
@@ -58,183 +54,6 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 shadow_color = Color(0, 0.83, 1, 0.65)
-shadow_size = 14
-
-[sub_resource type="StyleBoxFlat" id="row_panel_style"]
-bg_color = Color(0.02, 0.02, 0.052, 1)
-border_width_right = 2
-border_color = Color(0, 0.83, 1, 0.32)
-
-[sub_resource type="StyleBoxFlat" id="mut0_n"]
-bg_color = Color(0.06, 0.06, 0.09, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.45, 0.108, 0.224, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="mut0_p"]
-bg_color = Color(0.75, 0.179, 0.374, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.239, 0.498, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(1, 0.239, 0.498, 1)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="snd_n"]
-bg_color = Color(0.03, 0.03, 0.08, 0.9)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 0.83, 1, 0.35)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
-
-[sub_resource type="StyleBoxFlat" id="snd_hp"]
-bg_color = Color(0, 0.12, 0.18, 0.97)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 0.83, 1, 0.8)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
-shadow_color = Color(0, 0.83, 1, 0.35)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="mut1_n"]
-bg_color = Color(0.06, 0.06, 0.09, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 0.45, 0.297, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="mut1_p"]
-bg_color = Color(0, 0.75, 0.494, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 1, 0.659, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0, 1, 0.659, 1)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="mut2_n"]
-bg_color = Color(0.06, 0.06, 0.09, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.055, 0.321, 0.45, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="mut2_p"]
-bg_color = Color(0.092, 0.536, 0.75, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.122, 0.714, 1, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.122, 0.714, 1, 1)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="mut3_n"]
-bg_color = Color(0.06, 0.06, 0.09, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.45, 0.376, 0.131, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="mut3_p"]
-bg_color = Color(0.75, 0.626, 0.218, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.835, 0.29, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(1, 0.835, 0.29, 1)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="step_n"]
-bg_color = Color(0.03, 0.1, 0.08, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 0.85)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.35)
-shadow_size = 7
-
-[sub_resource type="StyleBoxFlat" id="step_p"]
-bg_color = Color(0, 0.28, 0.22, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.2)
-shadow_size = 3
-
-[sub_resource type="StyleBoxFlat" id="step_h"]
-bg_color = Color(0, 0.18, 0.14, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.65)
 shadow_size = 14
 
 [sub_resource type="StyleBoxFlat" id="play_n"]
@@ -361,6 +180,48 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 shadow_color = Color(0, 1, 0.55, 0.65)
+shadow_size = 14
+
+[sub_resource type="StyleBoxFlat" id="step_n"]
+bg_color = Color(0.03, 0.1, 0.08, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 0.85)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.35)
+shadow_size = 7
+
+[sub_resource type="StyleBoxFlat" id="step_p"]
+bg_color = Color(0, 0.28, 0.22, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.2)
+shadow_size = 3
+
+[sub_resource type="StyleBoxFlat" id="step_h"]
+bg_color = Color(0, 0.18, 0.14, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.65)
 shadow_size = 14
 
 [sub_resource type="StyleBoxFlat" id="tap_n"]
@@ -675,6 +536,37 @@ corner_radius_bottom_left = 10
 shadow_color = Color(0, 0.83, 1, 0.25)
 shadow_size = 4
 
+[sub_resource type="StyleBoxFlat" id="row_panel_style"]
+bg_color = Color(0.02, 0.02, 0.052, 1)
+border_width_right = 2
+border_color = Color(0, 0.83, 1, 0.32)
+
+[sub_resource type="StyleBoxFlat" id="add_row_n"]
+bg_color = Color(0.04, 0.08, 0.12, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="add_row_h"]
+bg_color = Color(0.06, 0.12, 0.18, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 0.8)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0.83, 1, 0.3)
+shadow_size = 5
+
 [node name="Main" type="Control" unique_id=45960669]
 layout_mode = 3
 anchors_preset = 15
@@ -761,205 +653,33 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="RowPanel" type="PanelContainer" parent="MainPanel/VBox/GridRow" unique_id=1000000002]
+[node name="RowPanel" type="ScrollContainer" parent="MainPanel/VBox/GridRow" unique_id=1000000002]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("row_panel_style")
+vertical_scroll_mode = 2
+horizontal_scroll_mode = 0
 
 [node name="RowMargin" type="MarginContainer" parent="MainPanel/VBox/GridRow/RowPanel" unique_id=1000000003]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 6
 theme_override_constants/margin_bottom = 10
 
 [node name="RowVBox" type="VBoxContainer" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin" unique_id=1000000004]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
 theme_override_constants/separation = 10
-
-[node name="NumSpacer" type="Control" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox" unique_id=1000000005]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="Row0Cell" type="HBoxContainer" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox" unique_id=1000000006]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 6
-
-[node name="Row0MuteBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row0Cell" unique_id=1000000007]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0.35, 0.35, 0.35, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.239, 0.498, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("mut0_n")
-theme_override_styles/pressed = SubResource("mut0_p")
-theme_override_styles/hover = SubResource("mut0_n")
-toggle_mode = true
-text = "M"
-
-[node name="Row0Label" type="Label" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row0Cell" unique_id=1000000008]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.239, 0.498, 1)
-theme_override_font_sizes/font_size = 15
-text = "KICK"
-horizontal_alignment = 1
-
-[node name="Row0SoundBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row0Cell" unique_id=1000000009]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0, 0.83, 1, 0.65)
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("snd_n")
-theme_override_styles/pressed = SubResource("snd_hp")
-theme_override_styles/hover = SubResource("snd_hp")
-text = "♪"
-
-[node name="Row1Cell" type="HBoxContainer" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox" unique_id=1000000010]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 6
-
-[node name="Row1MuteBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row1Cell" unique_id=1000000011]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0.35, 0.35, 0.35, 1)
-theme_override_colors/font_pressed_color = Color(0, 1, 0.659, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("mut1_n")
-theme_override_styles/pressed = SubResource("mut1_p")
-theme_override_styles/hover = SubResource("mut1_n")
-toggle_mode = true
-text = "M"
-
-[node name="Row1Label" type="Label" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row1Cell" unique_id=1000000012]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0, 1, 0.659, 1)
-theme_override_font_sizes/font_size = 15
-text = "SNARE"
-horizontal_alignment = 1
-
-[node name="Row1SoundBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row1Cell" unique_id=1000000013]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0, 0.83, 1, 0.65)
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("snd_n")
-theme_override_styles/pressed = SubResource("snd_hp")
-theme_override_styles/hover = SubResource("snd_hp")
-text = "♪"
-
-[node name="Row2Cell" type="HBoxContainer" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox" unique_id=1000000014]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 6
-
-[node name="Row2MuteBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row2Cell" unique_id=1000000015]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0.35, 0.35, 0.35, 1)
-theme_override_colors/font_pressed_color = Color(0.122, 0.714, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("mut2_n")
-theme_override_styles/pressed = SubResource("mut2_p")
-theme_override_styles/hover = SubResource("mut2_n")
-toggle_mode = true
-text = "M"
-
-[node name="Row2Label" type="Label" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row2Cell" unique_id=1000000016]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.122, 0.714, 1, 1)
-theme_override_font_sizes/font_size = 15
-text = "HAT"
-horizontal_alignment = 1
-
-[node name="Row2SoundBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row2Cell" unique_id=1000000017]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0, 0.83, 1, 0.65)
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("snd_n")
-theme_override_styles/pressed = SubResource("snd_hp")
-theme_override_styles/hover = SubResource("snd_hp")
-text = "♪"
-
-[node name="Row3Cell" type="HBoxContainer" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox" unique_id=1000000018]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 6
-
-[node name="Row3MuteBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row3Cell" unique_id=1000000019]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0.35, 0.35, 0.35, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.835, 0.29, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("mut3_n")
-theme_override_styles/pressed = SubResource("mut3_p")
-theme_override_styles/hover = SubResource("mut3_n")
-toggle_mode = true
-text = "M"
-
-[node name="Row3Label" type="Label" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row3Cell" unique_id=1000000020]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.835, 0.29, 1)
-theme_override_font_sizes/font_size = 15
-text = "BASS"
-horizontal_alignment = 1
-
-[node name="Row3SoundBtn" type="Button" parent="MainPanel/VBox/GridRow/RowPanel/RowMargin/RowVBox/Row3Cell" unique_id=1000000021]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 50)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_colors/font_color = Color(0, 0.83, 1, 0.65)
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("snd_n")
-theme_override_styles/pressed = SubResource("snd_hp")
-theme_override_styles/hover = SubResource("snd_hp")
-text = "♪"
 
 [node name="StepArea" type="ScrollContainer" parent="MainPanel/VBox/GridRow" unique_id=1000000022]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-vertical_scroll_mode = 0
+vertical_scroll_mode = 2
 
 [node name="StepOuter" type="MarginContainer" parent="MainPanel/VBox/GridRow/StepArea" unique_id=1000000023]
 layout_mode = 2
@@ -975,21 +695,10 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Row0Steps" type="HBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000026]
+[node name="RowsContainer" type="VBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000030]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="Row1Steps" type="HBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000027]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Row2Steps" type="HBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000028]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Row3Steps" type="HBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000029]
-unique_name_in_owner = true
-layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="ControlsDivider" type="ColorRect" parent="MainPanel/VBox" unique_id=1105464067]
 custom_minimum_size = Vector2(0, 1)
@@ -1183,6 +892,23 @@ theme_override_styles/pressed = SubResource("step_p")
 theme_override_styles/hover = SubResource("step_h")
 text = "RANDOM"
 
+[node name="VSep5" type="ColorRect" parent="MainPanel/VBox/ControlsContainer"]
+custom_minimum_size = Vector2(1, 56)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0, 0.83, 1, 0.18)
+
+[node name="AddRowButton" type="Button" parent="MainPanel/VBox/ControlsContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 48)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(0, 0.83, 1, 0.7)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("add_row_n")
+theme_override_styles/hover = SubResource("add_row_h")
+text = "ADD ROW"
+
 [node name="ControlsBottomPad" type="Control" parent="MainPanel/VBox" unique_id=111111101]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
@@ -1325,16 +1051,5 @@ layout_mode = 2
 [node name="Timer" type="Timer" parent="." unique_id=281171515]
 wait_time = 0.25
 
-[node name="KickPlayer" type="AudioStreamPlayer" parent="." unique_id=88633056]
-stream = ExtResource("2_tbgi4")
-
-[node name="SnarePlayer" type="AudioStreamPlayer" parent="." unique_id=1397316438]
-stream = ExtResource("3_lquwl")
-
-[node name="HatPlayer" type="AudioStreamPlayer" parent="." unique_id=1200928773]
-stream = ExtResource("4_lquwl")
-
-[node name="BassPlayer" type="AudioStreamPlayer" parent="." unique_id=1980528818]
-stream = ExtResource("5_tbgi4")
-
 [connection signal="pressed" from="MainPanel/VBox/GameName/HBoxContainer/MenuButton" to="." method="_on_menu_button_pressed"]
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

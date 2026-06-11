@@ -1,20 +1,12 @@
 ## main.gd
 ## DrumMachine scene controller.
-## Responsibility: wire UI signals to the Sequencer model and update the view.
-## Business logic lives in Sequencer / PatternHistory.
-## Style creation lives in DrumTheme.
-## Static UI structure lives in main.tscn (row labels, mute/sound buttons, step containers).
-## Popup structures live in scenes/ui/velocity_popup.tscn and scenes/ui/sound_picker.tscn.
 extends Control
 
 # ── Layout constants ──────────────────────────────────────────────────────────
 const BTN_SIZE  := 96
 const H_GAP     := 6
-const V_GAP     := 10
 const BEAT_GAP  := 10
 const NUM_H     := 28
-const PAD_V     := 10
-const PAD_H     := 12
 
 # ── Input constants ───────────────────────────────────────────────────────────
 const LONG_PRESS_SEC := 0.45
@@ -27,11 +19,7 @@ const HELP_POPUP_SCENE     = preload("res://scenes/ui/help_popup.tscn")
 const CONFIRM_POPUP_SCENE  = preload("res://scenes/ui/confirm_popup.tscn")
 
 # ── Scene references ──────────────────────────────────────────────────────────
-@onready var _timer:        Timer             = $Timer
-@onready var _kick_player:  AudioStreamPlayer = $KickPlayer
-@onready var _snare_player: AudioStreamPlayer = $SnarePlayer
-@onready var _hat_player:   AudioStreamPlayer = $HatPlayer
-@onready var _bass_player:  AudioStreamPlayer = $BassPlayer
+@onready var _timer: Timer = $Timer
 
 @onready var _increase_tempo_btn: Button = %IncreaseTempoButton
 @onready var _decrease_tempo_btn: Button = %DecreaseTempoButton
@@ -45,6 +33,7 @@ const CONFIRM_POPUP_SCENE  = preload("res://scenes/ui/confirm_popup.tscn")
 @onready var _tap_btn:       Button = %TapButton
 @onready var _clear_btn:     Button = %ClearButton
 @onready var _random_btn:    Button = %RandomButton
+@onready var _add_row_btn:   Button = %AddRowButton
 
 @onready var _slot_btn_a: Button = %SlotButtonA
 @onready var _slot_btn_b: Button = %SlotButtonB
@@ -54,23 +43,30 @@ const CONFIRM_POPUP_SCENE  = preload("res://scenes/ui/confirm_popup.tscn")
 @onready var _load_btn:   Button = %LoadButton
 @onready var _inf_btn:    Button = $MainPanel/VBox/SlotsContainer/InfButton
 
+@onready var _row_panel:        VBoxContainer    = %RowVBox
+@onready var _row_scroll:       ScrollContainer  = %RowPanel
+@onready var _rows_container:   VBoxContainer    = %RowsContainer
+@onready var _step_num_row:     HBoxContainer    = %StepNumRow
+@onready var _step_area:        ScrollContainer  = %StepArea
+
 # ── Model / Logic ─────────────────────────────────────────────────────────────
 var _seq:     Sequencer
 var _history: PatternHistory
 var _music:   MusicManager
 
 # ── View state ────────────────────────────────────────────────────────────────
-var _buttons:      Array      = []   # [row][step] → Button
-var _row_labels:   Array      = []   # [row]       → Label   (static nodes)
-var _row_snd_btns: Array      = []   # [row]       → Button  (static nodes)
-var _row_mute_btns: Array     = []   # [row]       → Button  (static nodes)
-var _step_row_nodes: Array    = []   # [row]       → HBoxContainer (static nodes)
-var _style_cache:  Dictionary = {}   # Vector3i(velocity, row, is_beat) → styles
+var _buttons:        Array = []   # [row][step] → Button
+var _row_labels:     Array = []   # [row] → Label
+var _row_snd_btns:   Array = []   # [row] → Button (sound)
+var _row_mute_btns:  Array = []   # [row] → Button (mute)
+var _step_row_nodes: Array = []   # [row] → HBoxContainer
+var _style_cache:  Dictionary = {}
 var _pulse_tweens: Dictionary = {}
-var _prev_step:    int        = -1
+var _prev_step:    int = -1
 
 var _active_slot:  int   = 0
 var _slot_buttons: Array = []
+var _syncing_scroll: bool = false
 
 # ── Long press state ──────────────────────────────────────────────────────────
 var _lp_timer:    Timer
@@ -79,19 +75,13 @@ var _lp_step:     int  = -1
 var _lp_fired:    bool = false
 var _lp_consumed: bool = false
 
-# ── Velocity popup ────────────────────────────────────────────────────────────
+# ── Popups ────────────────────────────────────────────────────────────────────
 var _velocity_popup: VelocityPopup = null
 var _popup_backdrop: ColorRect     = null
-
-# ── Sound picker ──────────────────────────────────────────────────────────────
 var _sound_picker:          SoundPicker = null
 var _sound_picker_backdrop: ColorRect   = null
-
-# ── Help popup ────────────────────────────────────────────────────────────────
 var _help_popup:          HelpPopup = null
 var _help_popup_backdrop: ColorRect = null
-
-# ── Confirm popup ─────────────────────────────────────────────────────────────
 var _confirm_popup:          ConfirmPopup = null
 var _confirm_popup_backdrop: ColorRect    = null
 
@@ -103,7 +93,7 @@ func _ready() -> void:
 	_seq     = Sequencer.new()
 	_history = PatternHistory.new()
 	_music   = MusicManager.new()
-	_music.setup([_kick_player, _snare_player, _hat_player, _bass_player])
+	_music.setup(self)
 	_music.set_master_volume(GameSettings.master_volume_db)
 
 	_lp_timer           = Timer.new()
@@ -112,17 +102,14 @@ func _ready() -> void:
 	_lp_timer.timeout.connect(_on_long_press_timeout)
 	add_child(_lp_timer)
 
-	# Collect static row nodes
-	_row_labels    = [%Row0Label,    %Row1Label,    %Row2Label,    %Row3Label]
-	_row_snd_btns  = [%Row0SoundBtn, %Row1SoundBtn, %Row2SoundBtn, %Row3SoundBtn]
-	_row_mute_btns = [%Row0MuteBtn,  %Row1MuteBtn,  %Row2MuteBtn,  %Row3MuteBtn]
-	_step_row_nodes = [%Row0Steps,   %Row1Steps,    %Row2Steps,    %Row3Steps]
+	_step_area.get_v_scroll_bar().modulate.a = 0
+	_row_scroll.get_v_scroll_bar().modulate.a = 0
+	DrumTheme.style_h_scrollbar(_step_area)
 
-	%StepArea.get_v_scroll_bar().modulate.a = 0
-	DrumTheme.style_h_scrollbar(%StepArea)
+	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
+	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
 
-	_init_row_labels()
-	_build_grid_ui()
+	_rebuild_all_rows()
 
 	_timer.wait_time = _seq.timer_interval()
 	_timer.timeout.connect(_on_timer_timeout)
@@ -133,19 +120,171 @@ func _ready() -> void:
 	_refresh_tempo_label()
 	_refresh_steps_label()
 	_refresh_play_button()
+	_add_row_btn.pressed.connect(_on_add_row)
 
 
-# ── Row label init (static nodes) ─────────────────────────────────────────────
+# ── Scroll sync ──────────────────────────────────────────────────────────────
 
-func _init_row_labels() -> void:
-	for row in range(Sequencer.ROWS):
-		var mute_btn: Button = _row_mute_btns[row]
-		mute_btn.button_pressed = _seq.muted[row]
-		mute_btn.toggled.connect(_on_mute_toggled.bind(row))
-		(_row_labels[row] as Label).modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
-		var snd_btn: Button = _row_snd_btns[row]
-		snd_btn.tooltip_text = _seq.sound_paths[row].get_file().get_basename().replace("_", " ")
-		snd_btn.pressed.connect(_open_sound_picker.bind(row, snd_btn))
+func _sync_step_scroll(value: float) -> void:
+	if _syncing_scroll:
+		return
+	_syncing_scroll = true
+	_step_area.scroll_vertical = int(value)
+	_syncing_scroll = false
+
+
+func _sync_row_scroll(value: float) -> void:
+	if _syncing_scroll:
+		return
+	_syncing_scroll = true
+	_row_scroll.scroll_vertical = int(value)
+	_syncing_scroll = false
+
+
+# ── Row management ────────────────────────────────────────────────────────────
+
+func _rebuild_all_rows() -> void:
+	_row_scroll.get_v_scroll_bar().value_changed.disconnect(_sync_step_scroll)
+	_step_area.get_v_scroll_bar().value_changed.disconnect(_sync_row_scroll)
+
+	for child in _row_panel.get_children():
+		child.set_process(false)
+		child.set_process_input(false)
+		child.queue_free()
+	for child in _rows_container.get_children():
+		child.set_process(false)
+		child.set_process_input(false)
+		child.queue_free()
+	_buttons.clear()
+	_row_labels.clear()
+	_row_snd_btns.clear()
+	_row_mute_btns.clear()
+	_step_row_nodes.clear()
+	_style_cache.clear()
+	_pulse_tweens.clear()
+	_prev_step = -1
+
+	_step_num_row.add_theme_constant_override("separation", H_GAP)
+	for child in _step_num_row.get_children():
+		child.queue_free()
+	_build_step_numbers_header(_step_num_row)
+
+	_music.set_player_count(_seq.rows)
+
+	for row in range(_seq.rows):
+		_create_row_ui(row)
+
+	_add_row_btn.disabled = _seq.rows >= Sequencer.MAX_ROWS
+	_add_row_btn.text = "ADD ROW" if _seq.rows < Sequencer.MAX_ROWS else "MAX 10"
+
+	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
+	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
+	_row_scroll.scroll_vertical = 0
+	_step_area.scroll_vertical = 0
+
+
+func _create_row_ui(row: int) -> void:
+	var color := DrumTheme.row_color(row)
+
+	# ── Left panel: label, mute, sound ──────────────────────────────────────
+	var cell := HBoxContainer.new()
+	cell.custom_minimum_size = Vector2(0, BTN_SIZE)
+	cell.add_theme_constant_override("separation", 6)
+	_row_panel.add_child(cell)
+
+	var mute_btn := Button.new()
+	mute_btn.focus_mode = Control.FOCUS_NONE
+	mute_btn.custom_minimum_size = Vector2(50, 50)
+	mute_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mute_btn.toggle_mode = true
+	mute_btn.button_pressed = _seq.muted[row]
+	mute_btn.text = "M"
+	mute_btn.add_theme_font_size_override("font_size", 14)
+	var mute_style := DrumTheme.mute_style(_seq.muted[row], row)
+	mute_btn.add_theme_stylebox_override("normal", mute_style)
+	mute_btn.add_theme_stylebox_override("pressed", mute_style)
+	mute_btn.add_theme_stylebox_override("hover", mute_style)
+	mute_btn.toggled.connect(_on_mute_toggled.bind(row))
+	cell.add_child(mute_btn)
+	_row_mute_btns.append(mute_btn)
+
+	var label := Label.new()
+	label.text = DrumTheme.row_name(row)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", color)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
+	cell.add_child(label)
+	_row_labels.append(label)
+
+	var snd_btn := Button.new()
+	snd_btn.focus_mode = Control.FOCUS_NONE
+	snd_btn.custom_minimum_size = Vector2(50, 50)
+	snd_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	snd_btn.text = "♪"
+	snd_btn.add_theme_font_size_override("font_size", 22)
+	snd_btn.add_theme_color_override("font_color", Color(0, 0.83, 1, 0.65))
+	snd_btn.tooltip_text = _seq.sound_paths[row].get_file().get_basename().replace("_", " ")
+	snd_btn.pressed.connect(_open_sound_picker.bind(row, snd_btn))
+	cell.add_child(snd_btn)
+	_row_snd_btns.append(snd_btn)
+
+	if row >= Sequencer.DEFAULT_ROWS:
+		var del_btn := Button.new()
+		del_btn.focus_mode = Control.FOCUS_NONE
+		del_btn.custom_minimum_size = Vector2(36, 36)
+		del_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		del_btn.text = "×"
+		del_btn.add_theme_font_size_override("font_size", 18)
+		del_btn.add_theme_color_override("font_color", Color(1, 0.2, 0.4, 0.7))
+		del_btn.tooltip_text = "Delete row"
+		del_btn.pressed.connect(_on_delete_row.bind(row))
+		cell.add_child(del_btn)
+
+	# ── Right panel: step buttons ───────────────────────────────────────────
+	var step_hbox := HBoxContainer.new()
+	step_hbox.add_theme_constant_override("separation", H_GAP)
+	_rows_container.add_child(step_hbox)
+	_step_row_nodes.append(step_hbox)
+
+	_buttons.append([])
+	_build_step_row(step_hbox, row)
+
+
+func _on_delete_row(row: int) -> void:
+	if row < Sequencer.DEFAULT_ROWS:
+		return
+	if _seq.rows <= Sequencer.MIN_ROWS:
+		return
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
+	_history.push(_seq.get_grid_snapshot())
+	_seq.remove_row(row)
+	_music.set_player_count(_seq.rows)
+	_rebuild_all_rows()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
+
+
+func _on_add_row() -> void:
+	if _seq.add_row():
+		var was_playing := _seq.is_playing
+		if was_playing:
+			_seq.is_playing = false
+			_timer.stop()
+		_music.set_player_count(_seq.rows)
+		_rebuild_all_rows()
+		if was_playing:
+			_seq.is_playing = true
+			_seq.current_step = 0
+			_prev_step = -1
+			_timer.start()
 
 
 # ── Connections ───────────────────────────────────────────────────────────────
@@ -161,27 +300,7 @@ func _connect_transport_buttons() -> void:
 	_random_btn.pressed.connect(_on_randomize_pattern)
 
 
-# ── Grid UI (step buttons only) ───────────────────────────────────────────────
-
-func _build_grid_ui() -> void:
-	_buttons.clear()
-	_style_cache.clear()
-	_pulse_tweens.clear()
-	_prev_step = -1
-
-	# Clear step number header
-	for child in %StepNumRow.get_children():
-		child.free()
-	_build_step_numbers_header(%StepNumRow)
-
-	# Clear and rebuild each step row
-	for row in range(Sequencer.ROWS):
-		_buttons.append([])
-		var hbox: HBoxContainer = _step_row_nodes[row]
-		for child in hbox.get_children():
-			child.free()
-		_build_step_row(hbox, row)
-
+# ── Grid UI ───────────────────────────────────────────────────────────────────
 
 func _build_step_numbers_header(hbox: HBoxContainer) -> void:
 	hbox.add_theme_constant_override("separation", H_GAP)
@@ -255,7 +374,7 @@ func _on_long_press_timeout() -> void:
 		_open_velocity_popup(_lp_row, _lp_step)
 
 
-# ── Velocity cycling (short tap) ──────────────────────────────────────────────
+# ── Velocity cycling ─────────────────────────────────────────────────────────
 
 func _do_cycle_velocity(row: int, step: int) -> void:
 	_history.push(_seq.get_grid_snapshot())
@@ -265,11 +384,10 @@ func _do_cycle_velocity(row: int, step: int) -> void:
 		_music.play_row(row, v)
 
 
-# ── Velocity popup (long press) ───────────────────────────────────────────────
+# ── Velocity popup ────────────────────────────────────────────────────────────
 
 func _open_velocity_popup(row: int, step: int) -> void:
 	_close_velocity_popup()
-
 	var backdrop := ColorRect.new()
 	backdrop.color = Color(0, 0, 0, 0.01)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -281,7 +399,6 @@ func _open_velocity_popup(row: int, step: int) -> void:
 	)
 	add_child(backdrop)
 	_popup_backdrop = backdrop
-
 	var popup: VelocityPopup = VELOCITY_POPUP_SCENE.instantiate()
 	popup.velocity_chosen.connect(_on_velocity_chosen)
 	add_child(popup)
@@ -315,7 +432,6 @@ func _close_velocity_popup() -> void:
 
 func _open_sound_picker(row: int, anchor_btn: Button) -> void:
 	_close_sound_picker()
-
 	var backdrop := ColorRect.new()
 	backdrop.color = Color(0, 0, 0, 0.01)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -327,7 +443,6 @@ func _open_sound_picker(row: int, anchor_btn: Button) -> void:
 	)
 	add_child(backdrop)
 	_sound_picker_backdrop = backdrop
-
 	var picker: SoundPicker = SOUND_PICKER_SCENE.instantiate()
 	picker.z_index = 11
 	picker.sound_selected.connect(_on_sound_selected)
@@ -355,7 +470,7 @@ func _close_sound_picker() -> void:
 
 
 func _apply_sound_paths() -> void:
-	for row in range(Sequencer.ROWS):
+	for row in range(_seq.rows):
 		_music.set_stream(row, _seq.sound_paths[row])
 
 
@@ -364,13 +479,22 @@ func _apply_sound_paths() -> void:
 func _on_mute_toggled(pressed: bool, row: int) -> void:
 	_seq.muted[row] = pressed
 	(_row_labels[row] as Label).modulate = Color(0.4, 0.4, 0.4) if pressed else Color(1, 1, 1)
+	var color := DrumTheme.row_color(row)
+	var mute_style := DrumTheme.mute_style(pressed, row)
+	(_row_mute_btns[row] as Button).add_theme_stylebox_override("normal", mute_style)
+	(_row_mute_btns[row] as Button).add_theme_stylebox_override("pressed", mute_style)
+	(_row_mute_btns[row] as Button).add_theme_stylebox_override("hover", mute_style)
 
 
 # ── Sequencer tick ────────────────────────────────────────────────────────────
 
 func _on_timer_timeout() -> void:
+	if not _seq.is_playing:
+		return
 	var velocities := _seq.current_step_velocities()
-	for row in range(Sequencer.ROWS):
+	for row in range(_seq.rows):
+		if row >= _buttons.size():
+			continue
 		if velocities[row] > 0:
 			_music.play_row(row, velocities[row])
 			_flash_row_label(row)
@@ -400,19 +524,21 @@ func _pulse_button(btn: Button) -> void:
 
 
 func _highlight_step(step: int) -> void:
-	if _prev_step != -1:
-		for row in range(Sequencer.ROWS):
-			_buttons[row][_prev_step].modulate = Color(1, 1, 1)
-	for row in range(Sequencer.ROWS):
-		var btn: Button = _buttons[row][step]
-		btn.modulate = Color(2.4, 2.4, 2.4)
-		if _seq.grid[row][step] > 0:
-			_pulse_button(btn)
+	if _prev_step != -1 and _prev_step < _seq.steps:
+		for row in range(_seq.rows):
+			if row < _buttons.size() and _prev_step < _buttons[row].size():
+				_buttons[row][_prev_step].modulate = Color(1, 1, 1)
+	for row in range(_seq.rows):
+		if row < _buttons.size() and step < _buttons[row].size():
+			var btn: Button = _buttons[row][step]
+			btn.modulate = Color(2.4, 2.4, 2.4)
+			if _seq.grid[row][step] > 0:
+				_pulse_button(btn)
 	_prev_step = step
 
 
 func _refresh_step_visual(btn: Button, velocity: int, row: int, step: int) -> void:
-	var key    := Vector3i(velocity, row, 1 if step % 4 == 0 else 0)
+	var key := Vector3i(velocity, row, 1 if step % 4 == 0 else 0)
 	var styles: Array[StyleBoxFlat]
 	if _style_cache.has(key):
 		styles = _style_cache[key]
@@ -431,9 +557,10 @@ func _refresh_step_visual(btn: Button, velocity: int, row: int, step: int) -> vo
 
 
 func _refresh_all_step_visuals() -> void:
-	for row in range(Sequencer.ROWS):
+	for row in range(_seq.rows):
 		for step in range(_seq.steps):
-			_refresh_step_visual(_buttons[row][step], _seq.grid[row][step], row, step)
+			if row < _buttons.size() and step < _buttons[row].size():
+				_refresh_step_visual(_buttons[row][step], _seq.grid[row][step], row, step)
 
 
 # ── Play / Stop ───────────────────────────────────────────────────────────────
@@ -447,8 +574,9 @@ func _on_play_stop() -> void:
 	else:
 		_timer.stop()
 		if _prev_step != -1:
-			for row in range(Sequencer.ROWS):
-				_buttons[row][_prev_step].modulate = Color(1, 1, 1)
+			for row in range(_seq.rows):
+				if row < _buttons.size() and _prev_step < _buttons[row].size():
+					_buttons[row][_prev_step].modulate = Color(1, 1, 1)
 	_refresh_play_button()
 
 
@@ -464,7 +592,14 @@ func _refresh_play_button() -> void:
 
 
 func _set_button_border(btn: Button, color: Color) -> void:
-	var s := btn.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	if btn == null:
+		return
+	var style := btn.get_theme_stylebox("normal")
+	if style == null:
+		return
+	var s := style.duplicate() as StyleBoxFlat
+	if s == null:
+		return
 	s.border_color = color
 	s.shadow_color = color
 	btn.add_theme_stylebox_override("normal", s)
@@ -489,15 +624,35 @@ func _on_randomize_pattern() -> void:
 # ── Undo / Redo ───────────────────────────────────────────────────────────────
 
 func _undo() -> void:
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
 	var restored := _history.undo(_seq.get_grid_snapshot())
 	_seq.apply_grid_snapshot(restored)
-	_refresh_all_step_visuals()
+	_rebuild_all_rows()
+	_apply_sound_paths()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
 
 
 func _redo() -> void:
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
 	var restored := _history.redo(_seq.get_grid_snapshot())
 	_seq.apply_grid_snapshot(restored)
-	_refresh_all_step_visuals()
+	_rebuild_all_rows()
+	_apply_sound_paths()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
 
 
 # ── Save / Load ───────────────────────────────────────────────────────────────
@@ -524,19 +679,23 @@ func _on_load_pressed() -> void:
 	var data := SaveManager.load_slot(_active_slot)
 	if data.is_empty():
 		return
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
 	_history.push(_seq.get_grid_snapshot())
 	_seq.from_dict(data)
 	_apply_sound_paths()
-	# Refresh static row UI to reflect loaded state
-	for row in range(Sequencer.ROWS):
-		(_row_mute_btns[row] as Button).button_pressed = _seq.muted[row]
-		(_row_labels[row] as Label).modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
-		(_row_snd_btns[row] as Button).tooltip_text = _seq.sound_paths[row].get_file().get_basename().replace("_", " ")
-	_build_grid_ui()
+	_rebuild_all_rows()
 	_timer.wait_time = _seq.timer_interval()
 	_refresh_tempo_label()
 	_refresh_steps_label()
 	_refresh_slot_buttons()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
 
 
 # ── Slot UI ───────────────────────────────────────────────────────────────────
@@ -604,15 +763,35 @@ func _refresh_tempo_label() -> void:
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 func _on_increase_steps() -> void:
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
 	_seq.resize_steps(_seq.steps + 4)
-	_build_grid_ui()
+	_rebuild_all_rows()
+	_apply_sound_paths()
 	_refresh_steps_label()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
 
 
 func _on_decrease_steps() -> void:
+	var was_playing := _seq.is_playing
+	if was_playing:
+		_seq.is_playing = false
+		_timer.stop()
 	_seq.resize_steps(_seq.steps - 4)
-	_build_grid_ui()
+	_rebuild_all_rows()
+	_apply_sound_paths()
 	_refresh_steps_label()
+	if was_playing:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_prev_step = -1
+		_timer.start()
 
 
 func _refresh_steps_label() -> void:
@@ -654,10 +833,16 @@ func _input(event: InputEvent) -> void:
 			KEY_Y: _redo()
 		return
 	match event.keycode:
-		KEY_1: if not _seq.muted[0]: _music.play_row(0, 4)
-		KEY_2: if not _seq.muted[1]: _music.play_row(1, 4)
-		KEY_3: if not _seq.muted[2]: _music.play_row(2, 4)
-		KEY_4: if not _seq.muted[3]: _music.play_row(3, 4)
+		KEY_1: if _seq.rows > 0 and not _seq.muted[0]: _music.play_row(0, 4)
+		KEY_2: if _seq.rows > 1 and not _seq.muted[1]: _music.play_row(1, 4)
+		KEY_3: if _seq.rows > 2 and not _seq.muted[2]: _music.play_row(2, 4)
+		KEY_4: if _seq.rows > 3 and not _seq.muted[3]: _music.play_row(3, 4)
+		KEY_5: if _seq.rows > 4 and not _seq.muted[4]: _music.play_row(4, 4)
+		KEY_6: if _seq.rows > 5 and not _seq.muted[5]: _music.play_row(5, 4)
+		KEY_7: if _seq.rows > 6 and not _seq.muted[6]: _music.play_row(6, 4)
+		KEY_8: if _seq.rows > 7 and not _seq.muted[7]: _music.play_row(7, 4)
+		KEY_9: if _seq.rows > 8 and not _seq.muted[8]: _music.play_row(8, 4)
+		KEY_0: if _seq.rows > 9 and not _seq.muted[9]: _music.play_row(9, 4)
 		KEY_SPACE:
 			_on_play_stop()
 			get_viewport().set_input_as_handled()
@@ -667,14 +852,12 @@ func _input(event: InputEvent) -> void:
 
 func _open_confirm_popup(title: String, body: String, ok_label: String, on_confirm: Callable) -> void:
 	_close_confirm_popup()
-
 	var backdrop := ColorRect.new()
 	backdrop.color = Color(0, 0, 0, 0.55)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.z_index = 20
 	add_child(backdrop)
 	_confirm_popup_backdrop = backdrop
-
 	var popup: ConfirmPopup = CONFIRM_POPUP_SCENE.instantiate()
 	popup.z_index = 21
 	popup.confirmed.connect(on_confirm)
@@ -700,7 +883,6 @@ func _open_help_popup() -> void:
 	if _help_popup != null:
 		_close_help_popup()
 		return
-
 	var backdrop := ColorRect.new()
 	backdrop.color = Color(0, 0, 0, 0.45)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -712,7 +894,6 @@ func _open_help_popup() -> void:
 	)
 	add_child(backdrop)
 	_help_popup_backdrop = backdrop
-
 	var popup: HelpPopup = HELP_POPUP_SCENE.instantiate()
 	popup.z_index = 11
 	popup.get_node("Margin/VBox/TitleRow/CloseBtn").pressed.connect(_close_help_popup)

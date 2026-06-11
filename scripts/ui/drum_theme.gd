@@ -5,20 +5,40 @@
 class_name DrumTheme
 
 const ROW_COLORS: Array[Color] = [
-	Color("#FF3D7F"),  # kick
-	Color("#00FFA8"),  # snare
-	Color("#1FB6FF"),  # hat
-	Color("#FFD54A"),  # bass
+	Color("#FF3D7F"),  # 0: kick
+	Color("#00FFA8"),  # 1: snare
+	Color("#1FB6FF"),  # 2: hat
+	Color("#FFD54A"),  # 3: bass
+	Color("#FF6B35"),  # 4: percussion
+	Color("#A855F7"),  # 5: synth
+	Color("#06B6D4"),  # 6: fx
+	Color("#F43F5E"),  # 7: melody
+	Color("#10B981"),  # 8: arp
+	Color("#F59E0B"),  # 9: misc
 ]
 
-const ROW_NAMES: Array[String] = ["KICK", "SNARE", "HAT", "BASS"]
+const ROW_NAMES: Array[String] = [
+	"KICK", "SNARE", "HAT", "BASS",
+	"PERC", "SYNTH", "FX", "MELODY",
+	"ARP", "MISC",
+]
+
+const MAX_VISIBLE_ROWS := 10
+
+
+static func row_color(index: int) -> Color:
+	return ROW_COLORS[index % ROW_COLORS.size()]
+
+
+static func row_name(index: int) -> String:
+	return ROW_NAMES[index % ROW_NAMES.size()]
 
 
 # ── Step buttons ──────────────────────────────────────────────────────────────
 
 ## Returns [normal, hover, pressed] StyleBoxFlat for a step button.
 static func step_styles(velocity: int, row: int, is_beat: bool) -> Array[StyleBoxFlat]:
-	var base   := ROW_COLORS[row]
+	var base   := ROW_COLORS[row % ROW_COLORS.size()]
 	var normal := StyleBoxFlat.new()
 	normal.set_corner_radius_all(14)
 
@@ -49,7 +69,7 @@ static func step_styles(velocity: int, row: int, is_beat: bool) -> Array[StyleBo
 # ── Mute buttons ──────────────────────────────────────────────────────────────
 
 static func mute_style(is_muted: bool, row: int) -> StyleBoxFlat:
-	var color := ROW_COLORS[row]
+	var color := ROW_COLORS[row % ROW_COLORS.size()]
 	var s     := StyleBoxFlat.new()
 	s.set_corner_radius_all(8)
 	if is_muted:
@@ -68,7 +88,7 @@ static func mute_style(is_muted: bool, row: int) -> StyleBoxFlat:
 # ── Save slot buttons ─────────────────────────────────────────────────────────
 
 static func slot_style(row: int, is_active: bool, has_data: bool) -> StyleBoxFlat:
-	var color := ROW_COLORS[row]
+	var color := ROW_COLORS[row % ROW_COLORS.size()]
 	var s     := StyleBoxFlat.new()
 	s.set_corner_radius_all(10)
 	s.set_border_width_all(2)

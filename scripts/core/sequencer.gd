@@ -5,7 +5,9 @@
 class_name Sequencer
 extends RefCounted
 
-const ROWS         := 4
+const MIN_ROWS     := 1
+const MAX_ROWS     := 10
+const DEFAULT_ROWS := 4
 const MIN_STEPS    := 4
 const MAX_STEPS    := 64
 const MIN_TEMPO    := 30
@@ -13,8 +15,7 @@ const MAX_TEMPO    := 300
 const DEFAULT_STEPS := 16
 const DEFAULT_TEMPO := 120
 
-# Probability that each row fires on a random step (kick, snare, hat, bass)
-const RANDOMIZE_PROBS: Array[float] = [0.35, 0.22, 0.50, 0.18]
+const RANDOMIZE_PROBS_DEFAULT: float = 0.30
 
 const DEFAULT_SOUNDS: Array[String] = [
 	"res://assets/sounds/kick/kick_syth.wav",
@@ -25,25 +26,65 @@ const DEFAULT_SOUNDS: Array[String] = [
 
 # grid[row][step] = int 0–4  (0 = off, 1–4 = velocity)
 var grid:        Array        = []
-var muted:       Array[bool]  = [false, false, false, false]
+var muted:       Array[bool]  = []
 var sound_paths: Array[String] = []
-var tempo: int  = DEFAULT_TEMPO
-var steps: int  = DEFAULT_STEPS
+var rows: int    = DEFAULT_ROWS
+var tempo: int   = DEFAULT_TEMPO
+var steps: int   = DEFAULT_STEPS
 
 var current_step: int  = 0
 var is_playing:   bool = true
 
 
 func _init() -> void:
-	sound_paths = DEFAULT_SOUNDS.duplicate()
+	_init_defaults()
 	_rebuild_grid()
+
+
+func _init_defaults() -> void:
+	sound_paths.clear()
+	muted.clear()
+	for i in range(DEFAULT_ROWS):
+		sound_paths.append(DEFAULT_SOUNDS[i] if i < DEFAULT_SOUNDS.size() else DEFAULT_SOUNDS[0])
+		muted.append(false)
+	rows = DEFAULT_ROWS
+
+
+# ── Rows ──────────────────────────────────────────────────────────────────────
+
+func add_row(sound_path: String = "") -> bool:
+	if rows >= MAX_ROWS:
+		return false
+	var path := sound_path if not sound_path.is_empty() else _default_sound_for_row(rows)
+	sound_paths.append(path)
+	muted.append(false)
+	var new_row: Array[int] = []
+	new_row.resize(steps)
+	new_row.fill(0)
+	grid.append(new_row)
+	rows += 1
+	return true
+
+
+func remove_row(index: int) -> bool:
+	if rows <= MIN_ROWS or index < 0 or index >= rows:
+		return false
+	sound_paths.remove_at(index)
+	muted.remove_at(index)
+	grid.remove_at(index)
+	rows -= 1
+	return true
+
+
+func _default_sound_for_row(index: int) -> String:
+	return DEFAULT_SOUNDS[index % DEFAULT_SOUNDS.size()]
 
 
 # ── Grid ──────────────────────────────────────────────────────────────────────
 
 func _rebuild_grid() -> void:
 	grid.clear()
-	for _i in range(ROWS):
+	for _i in range(rows):
 		var row: Array[int] = []
 		row.resize(steps)
 		row.fill(0)
@@ -55,7 +96,7 @@ func resize_steps(new_steps: int) -> void:
 	var snapshot := get_grid_snapshot()
 	steps = clampi(new_steps, MIN_STEPS, MAX_STEPS)
 	_rebuild_grid()
-	for row in range(ROWS):
+	for row in range(rows):
 		for step in range(mini(steps, snapshot[row].size())):
 			grid[row][step] = snapshot[row][step]
 	current_step = 0
@@ -76,7 +117,7 @@ func cycle_velocity(row: int, step: int) -> int:
 ## Returns velocity for each row at the current step, honouring mute flags.
 func current_step_velocities() -> Array[int]:
 	var result: Array[int] = []
-	for row in range(ROWS):
+	for row in range(rows):
 		result.append(grid[row][current_step] if not muted[row] else 0)
 	return result
 
@@ -89,13 +130,13 @@ func advance() -> void:
 
 func get_grid_snapshot() -> Array:
 	var copy: Array = []
-	for row in range(ROWS):
+	for row in range(rows):
 		copy.append(grid[row].duplicate())
 	return copy
 
 
 func apply_grid_snapshot(snapshot: Array) -> void:
-	for row in range(ROWS):
+	for row in range(rows):
 		if row >= snapshot.size():
 			break
 		for step in range(steps):
@@ -105,14 +146,14 @@ func apply_grid_snapshot(snapshot: Array) -> void:
 # ── Pattern operations ────────────────────────────────────────────────────────
 
 func clear() -> void:
-	for row in range(ROWS):
+	for row in range(rows):
 		grid[row].fill(0)
 
 
 func randomize() -> void:
-	for row in range(ROWS):
+	for row in range(rows):
 		for step in range(steps):
-			grid[row][step] = randi_range(2, 4) if randf() < RANDOMIZE_PROBS[row] else 0
+			grid[row][step] = randi_range(2, 4) if randf() < RANDOMIZE_PROBS_DEFAULT else 0
 
 
 # ── Tempo ─────────────────────────────────────────────────────────────────────
@@ -126,6 +167,7 @@ func timer_interval() -> float:
 
 func to_dict() -> Dictionary:
 	return {
+		"rows":   rows,
 		"tempo":  tempo,
 		"steps":  steps,
 		"muted":  Array(muted),
@@ -135,14 +177,26 @@ func to_dict() -> Dictionary:
 
 
 func from_dict(data: Dictionary) -> void:
+	var saved_rows: int = int(data.get("rows", DEFAULT_ROWS))
+	saved_rows = clampi(saved_rows, MIN_ROWS, MAX_ROWS)
 	tempo = int(data.get("tempo", DEFAULT_TEMPO))
 	steps = clampi(int(data.get("steps", DEFAULT_STEPS)), MIN_STEPS, MAX_STEPS)
-	var saved_muted: Array = data.get("muted", [])
-	for i in range(ROWS):
-		muted[i] = bool(saved_muted[i]) if i < saved_muted.size() else false
+	# Build rows from saved data
+	sound_paths.clear()
+	muted.clear()
+	grid.clear()
 	var saved_sounds: Array = data.get("sounds", [])
-	for i in range(ROWS):
-		sound_paths[i] = saved_sounds[i] if i < saved_sounds.size() else DEFAULT_SOUNDS[i]
-	_rebuild_grid()
-	apply_grid_snapshot(data.get("grid", []))
+	var saved_muted: Array = data.get("muted", [])
+	var saved_grid: Array = data.get("grid", [])
+	for i in range(saved_rows):
+		sound_paths.append(saved_sounds[i] if i < saved_sounds.size() else _default_sound_for_row(i))
+		muted.append(bool(saved_muted[i]) if i < saved_muted.size() else false)
+		var row_data: Array[int] = []
+		row_data.resize(steps)
+		row_data.fill(0)
+		if i < saved_grid.size():
+			for step in range(mini(steps, saved_grid[i].size())):
+				row_data[step] = int(saved_grid[i][step])
+		grid.append(row_data)
+	rows = saved_rows
 	current_step = 0
