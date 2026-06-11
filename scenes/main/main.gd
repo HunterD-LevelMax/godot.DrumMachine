@@ -254,7 +254,6 @@ func _create_row_ui(row: int) -> void:
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", color)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	label.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 	label.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
