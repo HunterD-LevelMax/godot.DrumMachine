@@ -478,7 +478,7 @@ func _on_timer_timeout() -> void:
 func _flash_row_label(row: int) -> void:
 	if row >= _row_labels.size():
 		return
-	var lbl: Label = _row_labels[row]
+	var lbl: Button = _row_labels[row]
 	if _flash_tweens.has(lbl) and _flash_tweens[lbl] != null:
 		_flash_tweens[lbl].kill()
 	var tween := create_tween()
