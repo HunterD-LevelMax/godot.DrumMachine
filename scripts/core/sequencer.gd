@@ -5,15 +5,22 @@
 class_name Sequencer
 extends RefCounted
 
-const MIN_ROWS     := 1
-const MAX_ROWS     := 10
-const DEFAULT_ROWS := 4
-const MIN_STEPS    := 4
-const MAX_STEPS    := 64
-const MIN_TEMPO    := 30
-const MAX_TEMPO    := 300
-const DEFAULT_STEPS := 16
-const DEFAULT_TEMPO := 120
+signal tempo_changed(value: int)
+signal structure_changed
+signal row_changed(row: int)
+signal pattern_changed
+
+const MIN_ROWS := PatternState.MIN_ROWS
+const MAX_ROWS := PatternState.MAX_ROWS
+const DEFAULT_ROWS := PatternState.DEFAULT_ROWS
+const MIN_STEPS := PatternState.MIN_STEPS
+const MAX_STEPS := PatternState.MAX_STEPS
+const MIN_TEMPO := PatternState.MIN_TEMPO
+const MAX_TEMPO := PatternState.MAX_TEMPO
+const DEFAULT_STEPS := PatternState.DEFAULT_STEPS
+const DEFAULT_TEMPO := PatternState.DEFAULT_TEMPO
+const MIN_VELOCITY := PatternState.MIN_VELOCITY
+const MAX_VELOCITY := PatternState.MAX_VELOCITY
 
 const RANDOMIZE_PROBS_DEFAULT: float = 0.30
 
@@ -65,6 +72,7 @@ func add_row(sound_path: String = "") -> bool:
 	new_row.fill(0)
 	grid.append(new_row)
 	rows += 1
+	structure_changed.emit()
 	return true
 
 
@@ -75,6 +83,7 @@ func remove_row(index: int) -> bool:
 	muted.remove_at(index)
 	grid.remove_at(index)
 	rows -= 1
+	structure_changed.emit()
 	return true
 
 
@@ -102,17 +111,26 @@ func resize_steps(new_steps: int) -> void:
 		for step in range(mini(steps, snapshot[row].size())):
 			grid[row][step] = snapshot[row][step]
 	current_step = 0
+	structure_changed.emit()
 
 
 func set_velocity(row: int, step: int, velocity: int) -> void:
-	grid[row][step] = velocity
+	if not _is_valid_cell(row, step):
+		return
+	grid[row][step] = clampi(velocity, MIN_VELOCITY, MAX_VELOCITY)
+	row_changed.emit(row)
+	pattern_changed.emit()
 
 
 ## Cycle velocity 0→4→3→2→1→0. Returns the new velocity.
 func cycle_velocity(row: int, step: int) -> int:
+	if not _is_valid_cell(row, step):
+		return MIN_VELOCITY
 	var v: int = grid[row][step]
 	v = 4 if v == 0 else v - 1
 	grid[row][step] = v
+	row_changed.emit(row)
+	pattern_changed.emit()
 	return v
 
 
@@ -144,6 +162,7 @@ func apply_grid_snapshot(snapshot: Array) -> void:
 			break
 		for step in range(steps):
 			grid[row][step] = int(snapshot[row][step]) if step < snapshot[row].size() else 0
+	pattern_changed.emit()
 
 
 # ── Pattern operations ────────────────────────────────────────────────────────
@@ -151,12 +170,14 @@ func apply_grid_snapshot(snapshot: Array) -> void:
 func clear() -> void:
 	for row in range(rows):
 		grid[row].fill(0)
+	pattern_changed.emit()
 
 
 func randomize() -> void:
 	for row in range(rows):
 		for step in range(steps):
 			grid[row][step] = randi_range(2, 4) if randf() < RANDOMIZE_PROBS_DEFAULT else 0
+	pattern_changed.emit()
 
 
 # ── Tempo ─────────────────────────────────────────────────────────────────────
@@ -166,40 +187,61 @@ func timer_interval() -> float:
 	return 60.0 / float(tempo) / 2.0
 
 
+func set_tempo(value: int) -> void:
+	var next_tempo := clampi(value, MIN_TEMPO, MAX_TEMPO)
+	if next_tempo == tempo:
+		return
+	tempo = next_tempo
+	tempo_changed.emit(tempo)
+
+
+func change_tempo(delta: int) -> void:
+	set_tempo(tempo + delta)
+
+
+func set_muted(row: int, value: bool) -> void:
+	if row < 0 or row >= rows or muted[row] == value:
+		return
+	muted[row] = value
+	row_changed.emit(row)
+	pattern_changed.emit()
+
+
+func set_sound(row: int, path: String) -> void:
+	if row < 0 or row >= rows or path.is_empty() or sound_paths[row] == path:
+		return
+	sound_paths[row] = path
+	row_changed.emit(row)
+	pattern_changed.emit()
+
+
 # ── Serialisation ─────────────────────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
-	return {
-		"rows":   rows,
-		"tempo":  tempo,
-		"steps":  steps,
-		"muted":  Array(muted),
-		"grid":   get_grid_snapshot(),
-		"sounds": sound_paths.duplicate(),
-	}
+	return create_snapshot().to_dict()
 
 
 func from_dict(data: Dictionary) -> void:
-	var saved_rows: int = int(data.get("rows", DEFAULT_ROWS))
-	saved_rows = clampi(saved_rows, MIN_ROWS, MAX_ROWS)
-	tempo = int(data.get("tempo", DEFAULT_TEMPO))
-	steps = clampi(int(data.get("steps", DEFAULT_STEPS)), MIN_STEPS, MAX_STEPS)
-	# Build rows from saved data
-	sound_paths.clear()
-	muted.clear()
-	grid.clear()
-	var saved_sounds: Array = data.get("sounds", [])
-	var saved_muted: Array = data.get("muted", [])
-	var saved_grid: Array = data.get("grid", [])
-	for i in range(saved_rows):
-		sound_paths.append(saved_sounds[i] if i < saved_sounds.size() else _default_sound_for_row(i))
-		muted.append(bool(saved_muted[i]) if i < saved_muted.size() else false)
-		var row_data: Array[int] = []
-		row_data.resize(steps)
-		row_data.fill(0)
-		if i < saved_grid.size():
-			for step in range(mini(steps, saved_grid[i].size())):
-				row_data[step] = int(saved_grid[i][step])
-		grid.append(row_data)
-	rows = saved_rows
+	restore_snapshot(PatternState.from_dict(data, DEFAULT_SOUNDS))
+
+
+func create_snapshot() -> PatternState:
+	return PatternState.create(rows, steps, tempo, grid, muted, sound_paths, DEFAULT_SOUNDS)
+
+
+func restore_snapshot(state: PatternState) -> void:
+	var safe_state := PatternState.from_dict(state.to_dict(), DEFAULT_SOUNDS)
+	rows = safe_state.rows
+	steps = safe_state.steps
+	tempo = safe_state.tempo
+	grid = safe_state.grid
+	muted = safe_state.muted
+	sound_paths = safe_state.sounds
 	current_step = 0
+	structure_changed.emit()
+	tempo_changed.emit(tempo)
+	pattern_changed.emit()
+
+
+func _is_valid_cell(row: int, step: int) -> bool:
+	return row >= 0 and row < rows and step >= 0 and step < steps

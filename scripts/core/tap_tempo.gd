@@ -27,8 +27,5 @@ func on_tap() -> void:
 		var total := 0.0
 		for i in range(1, _tap_times.size()):
 			total += _tap_times[i] - _tap_times[i - 1]
-		_seq.tempo = clampi(
-			int(round(60.0 / (total / (_tap_times.size() - 1)))),
-			Sequencer.MIN_TEMPO, Sequencer.MAX_TEMPO
-		)
+		_seq.set_tempo(int(round(60.0 / (total / (_tap_times.size() - 1)))))
 		_timer.wait_time = _seq.timer_interval()

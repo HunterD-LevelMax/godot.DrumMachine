@@ -2,9 +2,8 @@
 ## DrumMachine scene controller.
 extends Control
 
-const LONG_PRESS_SEC := 0.45
-
 const PLAYHEAD_HEIGHT := 4
+const DRUM_ROW_SCENE := preload("res://scenes/ui/drum_row.tscn")
 
 const _KEY_ROW_MAP: Array[Key] = [
 	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
@@ -44,20 +43,11 @@ var _music:   MusicManager
 var _grid:    StepGridBuilder
 var _popups:  PopupManager
 var _slots:   SlotManager
-var _tap:     TapTempo
-var _mute:    MuteController
+var _transport: TransportController
 
-var _row_labels:    Array = []
-var _row_snd_btns:  Array = []
-var _row_mute_btns: Array = []
+var _row_views: Array[DrumRow] = []
 
 var _syncing_scroll: bool = false
-
-var _lp_timer:    Timer
-var _lp_row:      int  = -1
-var _lp_step:     int  = -1
-var _lp_fired:    bool = false
-var _lp_consumed: bool = false
 
 var _playhead: ColorRect
 var _playhead_glow: ColorRect
@@ -77,24 +67,20 @@ func _ready() -> void:
 	_grid    = StepGridBuilder.new()
 	_popups  = PopupManager.new()
 	_slots   = SlotManager.new()
-	_tap     = TapTempo.new()
-	_mute    = MuteController.new()
+	_transport = TransportController.new()
 	_popups.setup(self)
+	_popups.velocity_chosen.connect(_on_velocity_chosen)
+	_popups.sound_selected.connect(_on_sound_selected)
 	_music.setup(self)
 	_music.set_master_volume(GameSettings.master_volume_db)
-	_slots.setup(
-		self, _seq, _popups, _music, _history, _timer, _grid,
-		_rebuild_all_rows, _apply_sound_paths,
-		_refresh_tempo_label, _refresh_steps_label
+	_slots.setup(_seq, _popups)
+	_slots.pattern_loaded.connect(_on_pattern_loaded)
+	_transport.setup(_seq, _timer)
+	_transport.step_triggered.connect(_on_transport_step)
+	_transport.playing_changed.connect(_on_playing_changed)
+	_transport.tempo_changed.connect(func(_tempo: int) -> void:
+		_refresh_tempo_label()
 	)
-	_tap.setup(_seq, _timer)
-	_mute.setup(self, _seq)
-
-	_lp_timer           = Timer.new()
-	_lp_timer.one_shot  = true
-	_lp_timer.wait_time = LONG_PRESS_SEC
-	_lp_timer.timeout.connect(_on_long_press_timeout)
-	add_child(_lp_timer)
 
 	_row_scroll.get_v_scroll_bar().modulate.a = 0
 	DrumTheme.style_h_scrollbar(_step_area)
@@ -106,9 +92,7 @@ func _ready() -> void:
 	_rebuild_all_rows()
 	_apply_sound_paths()
 
-	_timer.wait_time = _seq.timer_interval()
-	_timer.timeout.connect(_on_timer_timeout)
-	_timer.start()
+	_transport.start()
 
 	_connect_transport_buttons()
 	_slots.init(
@@ -193,9 +177,7 @@ func _rebuild_all_rows() -> void:
 		child.set_process_input(false)
 		child.queue_free()
 	_grid.clear()
-	_row_labels.clear()
-	_row_snd_btns.clear()
-	_row_mute_btns.clear()
+	_row_views.clear()
 	for tween: Tween in _flash_tweens.values():
 		if tween != null:
 			tween.kill()
@@ -213,7 +195,6 @@ func _rebuild_all_rows() -> void:
 
 	_add_row_btn.disabled = _seq.rows >= Sequencer.MAX_ROWS
 	_add_row_btn.text = "ADD ROW" if _seq.rows < Sequencer.MAX_ROWS else "MAX 10"
-	_mute.set_row_refs(_row_labels, _row_mute_btns, _row_snd_btns, _on_sound_btn_pressed_for_row)
 
 	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
 	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
@@ -224,78 +205,24 @@ func _rebuild_all_rows() -> void:
 
 
 func _create_row_ui(row: int) -> void:
-	var color := DrumTheme.row_color(row)
-
-	var cell := HBoxContainer.new()
-	cell.custom_minimum_size = Vector2(0, StepGridBuilder.BTN_SIZE)
-	cell.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	cell.add_theme_constant_override("separation", 6)
-	_row_panel.add_child(cell)
-
-	var mute_btn := Button.new()
-	mute_btn.focus_mode = Control.FOCUS_NONE
-	mute_btn.custom_minimum_size = Vector2(50, 50)
-	mute_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mute_btn.toggle_mode = true
-	mute_btn.button_pressed = _seq.muted[row]
-	mute_btn.text = "M"
-	mute_btn.add_theme_font_size_override("font_size", 14)
-	var mute_style := DrumTheme.mute_style(_seq.muted[row], row)
-	mute_btn.add_theme_stylebox_override("normal", mute_style)
-	mute_btn.add_theme_stylebox_override("pressed", mute_style)
-	mute_btn.add_theme_stylebox_override("hover", mute_style)
-	mute_btn.toggled.connect(_mute.on_mute_toggled.bind(row))
-	cell.add_child(mute_btn)
-	_row_mute_btns.append(mute_btn)
-
-	var label := Button.new()
-	label.text = DrumTheme.row_name(row)
-	label.focus_mode = Control.FOCUS_NONE
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	label.add_theme_font_size_override("font_size", 15)
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	label.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	label.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
-	label.gui_input.connect(_mute.on_label_input.bind(row))
-	cell.add_child(label)
-	_row_labels.append(label)
-
-	var snd_btn := Button.new()
-	snd_btn.focus_mode = Control.FOCUS_NONE
-	snd_btn.custom_minimum_size = Vector2(50, 50)
-	snd_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	snd_btn.text = "♪"
-	snd_btn.add_theme_font_size_override("font_size", 22)
-	snd_btn.add_theme_color_override("font_color", Color(0, 0.83, 1, 0.65))
-	snd_btn.tooltip_text = _seq.sound_paths[row].get_file().get_basename().replace("_", " ")
-	snd_btn.pressed.connect(_on_sound_btn_pressed.bind(row, snd_btn))
-	cell.add_child(snd_btn)
-	_row_snd_btns.append(snd_btn)
-
-	if row >= Sequencer.DEFAULT_ROWS:
-		var del_btn := Button.new()
-		del_btn.focus_mode = Control.FOCUS_NONE
-		del_btn.custom_minimum_size = Vector2(36, 36)
-		del_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		del_btn.text = "×"
-		del_btn.add_theme_font_size_override("font_size", 18)
-		del_btn.add_theme_color_override("font_color", Color(1, 0.2, 0.4, 0.7))
-		del_btn.tooltip_text = "Delete row"
-		del_btn.pressed.connect(_on_delete_row.bind(row))
-		cell.add_child(del_btn)
+	var row_view: DrumRow = DRUM_ROW_SCENE.instantiate()
+	_row_panel.add_child(row_view)
+	row_view.setup(
+		row,
+		_seq.muted[row],
+		_seq.sound_paths[row],
+		row >= Sequencer.DEFAULT_ROWS
+	)
+	row_view.mute_requested.connect(_on_row_mute_requested)
+	row_view.sound_requested.connect(_on_sound_btn_pressed)
+	row_view.delete_requested.connect(_on_delete_row)
+	_row_views.append(row_view)
 
 	var step_hbox := HBoxContainer.new()
 	step_hbox.add_theme_constant_override("separation", StepGridBuilder.H_GAP)
 	_rows_container.add_child(step_hbox)
 	_grid.build_step_row(step_hbox, row, _seq.steps, _seq.grid,
-		_on_step_button_down, _on_step_button_up, _on_step_context_requested)
-
-
-func _animate_row_in(_cell: HBoxContainer, _step_hbox: HBoxContainer) -> void:
-	pass
+		_on_step_short_pressed, _open_velocity_popup)
 
 
 func _on_delete_row(row: int) -> void:
@@ -303,34 +230,22 @@ func _on_delete_row(row: int) -> void:
 		return
 	if _seq.rows <= Sequencer.MIN_ROWS:
 		return
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
-	_history.push(_seq.get_grid_snapshot())
+	var was_playing := _transport.pause_for_change()
+	_history.push(_seq.create_snapshot())
 	_seq.remove_row(row)
 	_music.set_player_count(_seq.rows)
 	_rebuild_all_rows()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()
+	_transport.resume_after_change(was_playing)
 
 
 func _on_add_row() -> void:
+	var previous_state := _seq.create_snapshot()
 	if _seq.add_row():
-		var was_playing := _seq.is_playing
-		if was_playing:
-			_seq.is_playing = false
-			_timer.stop()
+		_history.push(previous_state)
+		var was_playing := _transport.pause_for_change()
 		_music.set_player_count(_seq.rows)
 		_rebuild_all_rows()
-		if was_playing:
-			_seq.is_playing = true
-			_seq.current_step = 0
-			_grid.set_prev_step(-1)
-			_timer.start()
+		_transport.resume_after_change(was_playing)
 
 
 # ── Connections ───────────────────────────────────────────────────────────────
@@ -371,48 +286,15 @@ func _animate_button_press(btn: Button) -> void:
 	)
 
 
-# ── Long press ────────────────────────────────────────────────────────────────
-
-func _on_step_button_down(row: int, step: int) -> void:
-	if _popups.velocity_popup != null:
+func _on_step_short_pressed(row: int, step: int) -> void:
+	if _popups.has_velocity_popup():
 		_popups.close_velocity()
-		_lp_consumed = true
 		return
-	_lp_consumed = false
-	_lp_row      = row
-	_lp_step     = step
-	_lp_fired    = false
-	_lp_timer.start()
-
-
-func _on_step_button_up(row: int, step: int) -> void:
-	if _lp_consumed:
-		_lp_consumed = false
-		return
-	if not _lp_fired:
-		_lp_timer.stop()
-		_do_cycle_velocity(row, step)
-	_lp_row  = -1
-	_lp_step = -1
-
-
-func _on_long_press_timeout() -> void:
-	_lp_fired = true
-	if _lp_row >= 0:
-		_open_velocity_popup(_lp_row, _lp_step)
-
-
-func _on_step_context_requested(row: int, step: int) -> void:
-	_lp_timer.stop()
-	_lp_row = -1
-	_lp_step = -1
-	_lp_fired = false
-	_lp_consumed = false
-	_open_velocity_popup(row, step)
+	_do_cycle_velocity(row, step)
 
 
 func _do_cycle_velocity(row: int, step: int) -> void:
-	_history.push(_seq.get_grid_snapshot())
+	_history.push(_seq.create_snapshot())
 	var v := _seq.cycle_velocity(row, step)
 	var btn: Button = _grid.get_buttons()[row][step]
 	_grid.refresh_step_visual(btn, v, row, step)
@@ -426,13 +308,12 @@ func _do_cycle_velocity(row: int, step: int) -> void:
 func _open_velocity_popup(row: int, step: int) -> void:
 	_popups.open_velocity(
 		row, step, _seq.grid[row][step],
-		_grid.get_buttons()[row][step] as Button,
-		_on_velocity_chosen
+		_grid.get_buttons()[row][step] as Button
 	)
 
 
 func _on_velocity_chosen(row: int, step: int, velocity: int) -> void:
-	_history.push(_seq.get_grid_snapshot())
+	_history.push(_seq.create_snapshot())
 	_seq.set_velocity(row, step, velocity)
 	_grid.refresh_step_visual(_grid.get_buttons()[row][step], velocity, row, step)
 	if velocity > 0 and not _seq.muted[row]:
@@ -443,14 +324,15 @@ func _on_velocity_chosen(row: int, step: int, velocity: int) -> void:
 # ── Sound picker ──────────────────────────────────────────────────────────────
 
 func _on_sound_btn_pressed(row: int, anchor_btn: Button) -> void:
-	_popups.open_sound_picker(row, _seq.sound_paths[row], anchor_btn, _on_sound_selected)
+	_popups.open_sound_picker(row, _seq.sound_paths[row], anchor_btn)
 
 
 func _on_sound_selected(row: int, path: String) -> void:
-	_seq.sound_paths[row] = path
+	_history.push(_seq.create_snapshot())
+	_seq.set_sound(row, path)
 	_music.set_stream(row, path)
-	if row < _row_snd_btns.size():
-		(_row_snd_btns[row] as Button).tooltip_text = path.get_file().get_basename().replace("_", " ")
+	if row < _row_views.size():
+		_row_views[row].set_sound_path(path)
 	_popups.close_sound_picker()
 
 
@@ -459,17 +341,27 @@ func _apply_sound_paths() -> void:
 		_music.set_stream(row, _seq.sound_paths[row])
 
 
-func _on_sound_btn_pressed_for_row(row: int) -> void:
-	if row < _row_snd_btns.size():
-		_on_sound_btn_pressed(row, _row_snd_btns[row] as Button)
+func _on_pattern_loaded(state: PatternState) -> void:
+	var was_playing := _transport.pause_for_change()
+	_history.push(_seq.create_snapshot())
+	_seq.restore_snapshot(state)
+	_rebuild_all_rows()
+	_apply_sound_paths()
+	_refresh_tempo_label()
+	_refresh_steps_label()
+	_transport.resume_after_change(was_playing)
+
+
+func _on_row_mute_requested(row: int, muted: bool) -> void:
+	if row < 0 or row >= _seq.rows:
+		return
+	_history.push(_seq.create_snapshot())
+	_seq.set_muted(row, muted)
 
 
 # ── Sequencer tick ────────────────────────────────────────────────────────────
 
-func _on_timer_timeout() -> void:
-	if not _seq.is_playing:
-		return
-	var velocities := _seq.current_step_velocities()
+func _on_transport_step(step: int, velocities: Array[int]) -> void:
 	var buttons := _grid.get_buttons()
 	var row_count := _seq.rows
 	for row in range(row_count):
@@ -478,17 +370,16 @@ func _on_timer_timeout() -> void:
 		if velocities[row] > 0:
 			_music.play_row(row, velocities[row])
 			_flash_row_label(row)
-	_grid.highlight_step(_seq.current_step, row_count, _seq.steps, _seq.grid)
+	_grid.highlight_step(step, row_count, _seq.steps, _seq.grid)
 	_update_playhead()
-	_seq.advance()
 
 
 # ── Visual feedback ───────────────────────────────────────────────────────────
 
 func _flash_row_label(row: int) -> void:
-	if row >= _row_labels.size():
+	if row >= _row_views.size():
 		return
-	var lbl: Button = _row_labels[row]
+	var lbl := _row_views[row].get_name_button()
 	if _flash_tweens.has(lbl) and _flash_tweens[lbl] != null:
 		_flash_tweens[lbl].kill()
 	var tween := create_tween()
@@ -501,13 +392,13 @@ func _flash_row_label(row: int) -> void:
 
 func _on_play_stop() -> void:
 	_grid.bounce_button(_play_stop_btn)
-	_seq.is_playing = not _seq.is_playing
-	if _seq.is_playing:
-		_seq.current_step = 0
+	_transport.toggle_playing()
+
+
+func _on_playing_changed(is_playing: bool) -> void:
+	if is_playing:
 		_grid.set_prev_step(-1)
-		_timer.start()
 	else:
-		_timer.stop()
 		_grid.clear_highlight(_seq.rows, _seq.steps)
 		_playhead.visible = false
 		_playhead_glow.visible = false
@@ -546,7 +437,7 @@ func _set_button_border(btn: Button, color: Color) -> void:
 # ── Pattern operations ────────────────────────────────────────────────────────
 
 func _on_clear_pattern() -> void:
-	_history.push(_seq.get_grid_snapshot())
+	_history.push(_seq.create_snapshot())
 	_seq.clear()
 	_seq.current_step = 0
 	_grid.set_prev_step(-1)
@@ -555,7 +446,7 @@ func _on_clear_pattern() -> void:
 
 
 func _on_randomize_pattern() -> void:
-	_history.push(_seq.get_grid_snapshot())
+	_history.push(_seq.create_snapshot())
 	_seq.randomize()
 	_grid.refresh_all_step_visuals(_seq.rows, _seq.steps, _seq.grid)
 	_grid.ripple_grid(_seq.rows, _seq.steps)
@@ -564,49 +455,35 @@ func _on_randomize_pattern() -> void:
 # ── Undo / Redo ───────────────────────────────────────────────────────────────
 
 func _undo() -> void:
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
-	var restored := _history.undo(_seq.get_grid_snapshot())
-	_seq.apply_grid_snapshot(restored)
+	var was_playing := _transport.pause_for_change()
+	var restored := _history.undo(_seq.create_snapshot())
+	_seq.restore_snapshot(restored)
 	_rebuild_all_rows()
 	_apply_sound_paths()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()
+	_refresh_tempo_label()
+	_refresh_steps_label()
+	_transport.resume_after_change(was_playing)
 
 
 func _redo() -> void:
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
-	var restored := _history.redo(_seq.get_grid_snapshot())
-	_seq.apply_grid_snapshot(restored)
+	var was_playing := _transport.pause_for_change()
+	var restored := _history.redo(_seq.create_snapshot())
+	_seq.restore_snapshot(restored)
 	_rebuild_all_rows()
 	_apply_sound_paths()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()
+	_refresh_tempo_label()
+	_refresh_steps_label()
+	_transport.resume_after_change(was_playing)
 
 
 # ── Tempo ─────────────────────────────────────────────────────────────────────
 
 func _on_increase_tempo() -> void:
-	_seq.tempo   = mini(_seq.tempo + 5, Sequencer.MAX_TEMPO)
-	_timer.wait_time = _seq.timer_interval()
-	_refresh_tempo_label()
+	_transport.change_tempo(5)
 
 
 func _on_decrease_tempo() -> void:
-	_seq.tempo   = maxi(_seq.tempo - 5, Sequencer.MIN_TEMPO)
-	_timer.wait_time = _seq.timer_interval()
-	_refresh_tempo_label()
+	_transport.change_tempo(-5)
 
 
 func _refresh_tempo_label() -> void:
@@ -621,21 +498,23 @@ func _refresh_tempo_label() -> void:
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 func _on_increase_steps() -> void:
-	_pause_for_rebuild()
+	_history.push(_seq.create_snapshot())
+	var was_playing := _transport.pause_for_change()
 	_seq.resize_steps(_seq.steps + 4)
 	_rebuild_all_rows()
 	_apply_sound_paths()
 	_refresh_steps_label()
-	_resume_after_rebuild()
+	_transport.resume_after_change(was_playing)
 
 
 func _on_decrease_steps() -> void:
-	_pause_for_rebuild()
+	_history.push(_seq.create_snapshot())
+	var was_playing := _transport.pause_for_change()
 	_seq.resize_steps(_seq.steps - 4)
 	_rebuild_all_rows()
 	_apply_sound_paths()
 	_refresh_steps_label()
-	_resume_after_rebuild()
+	_transport.resume_after_change(was_playing)
 
 
 func _refresh_steps_label() -> void:
@@ -647,30 +526,10 @@ func _refresh_steps_label() -> void:
 	tw.tween_property(_steps_label, "scale", Vector2.ONE, 0.12)
 
 
-# ── Pause/Resume helper ──────────────────────────────────────────────────────
-
-var _was_playing_before_rebuild: bool = false
-
-func _pause_for_rebuild() -> void:
-	_was_playing_before_rebuild = _seq.is_playing
-	if _was_playing_before_rebuild:
-		_seq.is_playing = false
-		_timer.stop()
-
-
-func _resume_after_rebuild() -> void:
-	if _was_playing_before_rebuild:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()
-
-
 # ── Tap Tempo ─────────────────────────────────────────────────────────────────
 
 func _on_tap_tempo() -> void:
-	_tap.on_tap()
-	_refresh_tempo_label()
+	_transport.tap_tempo()
 
 
 # ── Keyboard input ────────────────────────────────────────────────────────────
@@ -678,7 +537,7 @@ func _on_tap_tempo() -> void:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed:
 		return
-	if _popups.velocity_popup != null:
+	if _popups.has_velocity_popup():
 		_popups.close_velocity()
 		return
 	if event.ctrl_pressed:

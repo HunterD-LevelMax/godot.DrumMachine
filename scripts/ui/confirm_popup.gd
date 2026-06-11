@@ -6,6 +6,7 @@ class_name ConfirmPopup
 extends PanelContainer
 
 signal confirmed()
+signal cancelled()
 
 
 func setup(title: String, body: String, confirm_label: String) -> void:
@@ -13,7 +14,7 @@ func setup(title: String, body: String, confirm_label: String) -> void:
 	(%Body   as Label).text  = body
 	(%OkBtn  as Button).text = confirm_label
 	(%OkBtn  as Button).pressed.connect(func() -> void: confirmed.emit())
-	(%CancelBtn as Button).pressed.connect(func() -> void: queue_free())
+	(%CancelBtn as Button).pressed.connect(func() -> void: cancelled.emit())
 
 
 func position_near(viewport_size: Vector2) -> void:

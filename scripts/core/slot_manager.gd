@@ -3,44 +3,25 @@
 class_name SlotManager
 extends RefCounted
 
-var _seq:      Sequencer
-var _popups:   PopupManager
-var _music:    MusicManager
-var _history:  PatternHistory
-var _timer:    Timer
-var _grid:     StepGridBuilder
-var _owner:    Control
+signal pattern_loaded(state: PatternState)
+signal operation_failed(message: String)
 
-var _active_slot: int   = 0
-var _slot_buttons: Array = []
+var _seq: Sequencer
+var _popups: PopupManager
 
-var on_rebuild:       Callable
-var on_apply_sounds:  Callable
-var on_refresh_tempo: Callable
-var on_refresh_steps: Callable
+var _active_slot: int = 0
+var _slot_buttons: Array[Button] = []
 
 
-func setup(owner: Control, seq: Sequencer, popups: PopupManager, music: MusicManager,
-		   history: PatternHistory, timer: Timer, grid: StepGridBuilder,
-		   p_on_rebuild: Callable, p_on_apply_sounds: Callable,
-		   p_on_refresh_tempo: Callable, p_on_refresh_steps: Callable) -> void:
-	_owner  = owner
-	_seq    = seq
+func setup(seq: Sequencer, popups: PopupManager) -> void:
+	_seq = seq
 	_popups = popups
-	_music  = music
-	_history = history
-	_timer  = timer
-	_grid   = grid
-	on_rebuild       = p_on_rebuild
-	on_apply_sounds  = p_on_apply_sounds
-	on_refresh_tempo = p_on_refresh_tempo
-	on_refresh_steps = p_on_refresh_steps
 
 
 func init(slot_a: Button, slot_b: Button, slot_c: Button, slot_d: Button,
 		  save_btn: Button, load_btn: Button, inf_btn: Button) -> void:
 	_slot_buttons = [slot_a, slot_b, slot_c, slot_d]
-	for i in range(4):
+	for i in range(_slot_buttons.size()):
 		_slot_buttons[i].focus_mode = Control.FOCUS_NONE
 		_slot_buttons[i].pressed.connect(_on_slot_selected.bind(i))
 	_apply_action_button(save_btn, Color("#FFD54A"))
@@ -74,7 +55,7 @@ func _refresh_slot_buttons() -> void:
 		btn.add_theme_stylebox_override("hover",   s)
 		btn.add_theme_color_override("font_color",
 			Color(1, 1, 1) if is_active
-			else (DrumTheme.ROW_COLORS[i].darkened(0.1) if has_data else Color(0.28, 0.28, 0.28)))
+				else (DrumTheme.row_color(i).darkened(0.1) if has_data else Color(0.28, 0.28, 0.28)))
 		btn.text = SaveManager.SLOT_NAMES[i] + ("•" if has_data else "")
 
 
@@ -100,28 +81,19 @@ func _on_save_pressed() -> void:
 
 func _do_save() -> void:
 	_popups.close_confirm()
-	SaveManager.save(_active_slot, _seq.to_dict())
+	var error := SaveManager.save(_active_slot, _seq.to_dict())
+	if error != OK:
+		var message := "Could not save slot %s: error %d" % [_active_slot, error]
+		push_error(message)
+		operation_failed.emit(message)
+		return
 	_refresh_slot_buttons()
 
 
 func _on_load_pressed() -> void:
 	var data := SaveManager.load_slot(_active_slot)
 	if data.is_empty():
+		operation_failed.emit("Slot %s is empty or invalid." % SaveManager.SLOT_NAMES[_active_slot])
 		return
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
-	_history.push(_seq.get_grid_snapshot())
-	_seq.from_dict(data)
-	on_rebuild.call()
-	on_apply_sounds.call()
-	_timer.wait_time = _seq.timer_interval()
-	on_refresh_tempo.call()
-	on_refresh_steps.call()
+	pattern_loaded.emit(PatternState.from_dict(data, Sequencer.DEFAULT_SOUNDS))
 	_refresh_slot_buttons()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()

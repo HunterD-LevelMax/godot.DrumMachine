@@ -19,7 +19,7 @@ func setup(row: int, step: int, current_velocity: int) -> void:
 	# Row-specific panel background (colour depends on which row was pressed).
 	add_theme_stylebox_override("panel", DrumTheme.velocity_popup_bg(row))
 
-	var color := DrumTheme.ROW_COLORS[row]
+	var color := DrumTheme.row_color(row)
 	%Title.add_theme_color_override("font_color", color.darkened(0.25))
 	%Sep.modulate = Color(color.r, color.g, color.b, 0.35)
 

@@ -33,21 +33,23 @@ func set_master_volume(volume_db: float) -> void:
 
 
 func set_stream(row: int, path: String) -> void:
-	if row >= _players.size():
+	if row < 0 or row >= _players.size() or path.is_empty():
 		return
 	if not _stream_cache.has(path):
 		_stream_cache[path] = load(path)
-	_players[row].stream = _stream_cache[path]
+	var stream: AudioStream = _stream_cache[path]
+	if stream == null:
+		push_warning("Could not load audio stream: %s" % path)
+		return
+	_players[row].stream = stream
 
 
 func play_row(row: int, velocity: int) -> void:
-	if row >= _players.size():
+	if row < 0 or row >= _players.size():
+		return
+	if velocity < PatternState.MIN_VELOCITY or velocity > PatternState.MAX_VELOCITY:
+		return
+	if _players[row].stream == null:
 		return
 	_players[row].volume_db = _master_volume_db + VELOCITY_DB[velocity]
 	_players[row].play()
-
-
-func get_player(row: int) -> AudioStreamPlayer:
-	if row < _players.size():
-		return _players[row]
-	return null

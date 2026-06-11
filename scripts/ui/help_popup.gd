@@ -5,6 +5,8 @@
 class_name HelpPopup
 extends PanelContainer
 
+signal close_requested
+
 const TIP_CARD_SCENE := preload("res://scenes/ui/tip_card.tscn")
 
 const TIPS: Array[Dictionary] = [
@@ -20,6 +22,7 @@ const TIPS: Array[Dictionary] = [
 
 
 func _ready() -> void:
+	%CloseBtn.pressed.connect(func() -> void: close_requested.emit())
 	var list: VBoxContainer = %TipsList
 	for tip: Dictionary in TIPS:
 		var card: TipCard = TIP_CARD_SCENE.instantiate()

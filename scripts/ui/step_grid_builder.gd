@@ -43,21 +43,22 @@ func build_step_numbers_header(hbox: HBoxContainer, steps: int) -> void:
 		_step_number_labels.append(lbl)
 
 
-func build_step_row(hbox: HBoxContainer, row: int, steps: int, grid: Array,
-		on_down: Callable = Callable(), on_up: Callable = Callable(),
-		on_context: Callable = Callable()) -> void:
+func build_step_row(
+		hbox: HBoxContainer,
+		row: int,
+		steps: int,
+		grid: Array,
+		on_short_press: Callable,
+		on_context: Callable
+	) -> void:
 	hbox.add_theme_constant_override("separation", H_GAP)
 	_buttons.append([])
 	for step in range(steps):
 		if step > 0 and step % 4 == 0:
 			hbox.add_child(_make_spacer(BEAT_GAP, BTN_SIZE))
 		var btn := _create_step_button(row, step, grid)
-		if on_down.is_valid():
-			btn.button_down.connect(on_down.bind(row, step))
-		if on_up.is_valid():
-			btn.button_up.connect(on_up.bind(row, step))
-		if on_context.is_valid():
-			btn.gui_input.connect(_on_step_gui_input.bind(btn, row, step, on_context))
+		btn.short_pressed.connect(on_short_press)
+		btn.context_requested.connect(on_context)
 		hbox.add_child(btn)
 		_buttons[row].append(btn)
 	_step_row_nodes.append(hbox)
@@ -75,21 +76,12 @@ func set_prev_step(v: int) -> void:
 	_prev_step = v
 
 
-func _create_step_button(row: int, step: int, grid: Array) -> Button:
-	var btn := Button.new()
-	btn.focus_mode          = Control.FOCUS_NONE
+func _create_step_button(row: int, step: int, grid: Array) -> StepButton:
+	var btn := StepButton.new()
+	btn.setup(row, step)
 	btn.custom_minimum_size = Vector2(BTN_SIZE, BTN_SIZE)
 	refresh_step_visual(btn, grid[row][step], row, step)
 	return btn
-
-
-func _on_step_gui_input(event: InputEvent, btn: Button, row: int, step: int,
-		on_context: Callable) -> void:
-	if event is InputEventMouseButton \
-			and event.button_index == MOUSE_BUTTON_RIGHT \
-			and event.pressed:
-		btn.accept_event()
-		on_context.call(row, step)
 
 
 func _make_spacer(w: int, h: int) -> Control:

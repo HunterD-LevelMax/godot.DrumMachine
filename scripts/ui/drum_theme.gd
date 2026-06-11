@@ -23,8 +23,6 @@ const ROW_NAMES: Array[String] = [
 	"ARP", "MISC",
 ]
 
-const MAX_VISIBLE_ROWS := 10
-
 static var _mute_style_cache: Dictionary = {}
 static var _slot_style_cache: Dictionary = {}
 
@@ -139,7 +137,7 @@ static func action_button_styles(color: Color) -> Array[StyleBoxFlat]:
 # ── Velocity popup ────────────────────────────────────────────────────────────
 
 static func velocity_popup_bg(row: int) -> StyleBoxFlat:
-	var color := ROW_COLORS[row]
+	var color := row_color(row)
 	var s     := StyleBoxFlat.new()
 	s.bg_color     = Color(0.06, 0.06, 0.12, 0.98)
 	s.border_color = color.darkened(0.38)
@@ -190,7 +188,7 @@ static func _style_bar(sb: ScrollBar, vertical: bool) -> void:
 
 ## Returns [normal, hover] StyleBoxFlat for a single velocity choice button.
 static func velocity_button_styles(v: int, current_v: int, row: int) -> Array[StyleBoxFlat]:
-	var color := ROW_COLORS[row]
+	var color := row_color(row)
 	var s     := StyleBoxFlat.new()
 	s.set_corner_radius_all(7)
 	s.content_margin_left   = 12.0
