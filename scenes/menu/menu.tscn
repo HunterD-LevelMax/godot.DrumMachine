@@ -1,0 +1,276 @@
+[gd_scene format=3 uid="uid://br4ifbreft0wi"]
+
+[ext_resource type="Script" uid="uid://yqxguour5vqj" path="res://scenes/menu/menu.gd" id="1_lti8b"]
+
+[sub_resource type="StyleBoxFlat" id="card"]
+bg_color = Color(0.038, 0.038, 0.09, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.83, 1, 0.18)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0, 0.83, 1, 0.1)
+shadow_size = 28
+
+[sub_resource type="StyleBoxFlat" id="btn_play_n"]
+bg_color = Color(0, 0.1, 0.06, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.6, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 1, 0.6, 0.4)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_play_p"]
+bg_color = Color(0, 0.3, 0.18, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.6, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 1, 0.6, 0.25)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="btn_play_h"]
+bg_color = Color(0, 0.2, 0.12, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 1, 0.6, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 1, 0.6, 0.7)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="btn_set_n"]
+bg_color = Color(0, 0.08, 0.14, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0.83, 1, 0.4)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_set_p"]
+bg_color = Color(0, 0.24, 0.35, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0.83, 1, 0.25)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="btn_set_h"]
+bg_color = Color(0, 0.16, 0.24, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0.83, 1, 0.7)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="btn_exit_n"]
+bg_color = Color(0.14, 0.02, 0.07, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0, 0.43, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0, 0.43, 0.35)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_exit_p"]
+bg_color = Color(0.35, 0.03, 0.16, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0, 0.43, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0, 0.43, 0.25)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="btn_exit_h"]
+bg_color = Color(0.25, 0.02, 0.12, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0, 0.43, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0, 0.43, 0.65)
+shadow_size = 18
+
+[node name="Menu" type="Control" unique_id=1861768507]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lti8b")
+
+[node name="BG" type="ColorRect" parent="." unique_id=718829135]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.028, 0.028, 0.065, 1)
+
+[node name="TopBar" type="ColorRect" parent="." unique_id=909840406]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0, 0.83, 1, 0.75)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=768543265]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="CenterContainer" unique_id=460789011]
+layout_mode = 2
+theme_override_styles/panel = SubResource("card")
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Card" unique_id=2104064854]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Card/Margin" unique_id=1384125046]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="AppTitle" type="Label" parent="CenterContainer/Card/Margin/VBox" unique_id=889860831]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.83, 1, 1)
+theme_override_colors/font_shadow_color = Color(1, 0, 0.43, 0.55)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/shadow_outline_size = 14
+theme_override_font_sizes/font_size = 64
+text = "DRUM MACHINE"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/Card/Margin/VBox" unique_id=1439215720]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.38, 0.45, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+text = "B E A T   S E Q U E N C E R"
+horizontal_alignment = 1
+
+[node name="Divider" type="ColorRect" parent="CenterContainer/Card/Margin/VBox" unique_id=2099135256]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0, 0.83, 1, 0.22)
+
+[node name="Gap" type="Control" parent="CenterContainer/Card/Margin/VBox" unique_id=89687308]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="PlayButton" type="Button" parent="CenterContainer/Card/Margin/VBox" unique_id=460477860]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 74)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0.6, 1)
+theme_override_colors/font_pressed_color = Color(0.7, 1, 0.85, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("btn_play_n")
+theme_override_styles/pressed = SubResource("btn_play_p")
+theme_override_styles/hover = SubResource("btn_play_h")
+text = "▶ LAUNCH"
+
+[node name="SettingsButton" type="Button" parent="CenterContainer/Card/Margin/VBox" unique_id=427952461]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 74)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.83, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.6, 0.92, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("btn_set_n")
+theme_override_styles/pressed = SubResource("btn_set_p")
+theme_override_styles/hover = SubResource("btn_set_h")
+text = "⚙ SETTINGS"
+
+[node name="ExitButton" type="Button" parent="CenterContainer/Card/Margin/VBox" unique_id=767981322]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 74)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0.43, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.5, 0.7, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("btn_exit_n")
+theme_override_styles/pressed = SubResource("btn_exit_p")
+theme_override_styles/hover = SubResource("btn_exit_h")
+text = "✕ EXIT"
+
+[node name="Version" type="Label" parent="." unique_id=1011817716]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -365.0
+offset_top = 271.0
+offset_right = -163.0
+offset_bottom = 291.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.22, 0.25, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "v1.1  ·  GODOT 4"
+horizontal_alignment = 2

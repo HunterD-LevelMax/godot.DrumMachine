@@ -1,0 +1,28 @@
+{
+  "bass": [
+	"res://assets/sounds/bass/bass.ogg",
+	"res://assets/sounds/bass/bass_sub_wiggle.wav",
+	"res://assets/sounds/bass/bit_crank.wav",
+    "res://assets/sounds/bass/bit_lo_dip.wav"
+  ],
+  "hat": [
+    "res://assets/sounds/hat/hat.wav"
+  ],
+  "kick": [
+	"res://assets/sounds/kick/clip_verb.wav",
+	"res://assets/sounds/kick/kick_deep_bass.wav",
+	"res://assets/sounds/kick/kick_gabber_jumpstyle.wav",
+	"res://assets/sounds/kick/kick_syth.wav",
+    "res://assets/sounds/kick/kick_thump.wav"
+  ],
+  "snare": [
+    "res://assets/sounds/snare/snare.wav"
+  ],
+  "syth": [
+	"res://assets/sounds/syth/deep_tone_2.wav",
+	"res://assets/sounds/syth/synth_blawan_mumble_2.wav",
+	"res://assets/sounds/syth/synth_dub_chorder.wav",
+	"res://assets/sounds/syth/synth_hiccup.wav",
+    "res://assets/sounds/syth/synth_LFO_squeal.wav"
+  ]
+}

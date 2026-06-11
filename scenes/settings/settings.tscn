@@ -1,0 +1,221 @@
+[gd_scene format=3 uid="uid://dacvyok8yd4rl"]
+
+[ext_resource type="Script" uid="uid://cumghydnq7hlc" path="res://scenes/settings/settings.gd" id="1_x2hje"]
+
+[sub_resource type="StyleBoxFlat" id="card"]
+bg_color = Color(0.038, 0.038, 0.09, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.83, 1, 0.18)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0, 0.83, 1, 0.1)
+shadow_size = 28
+
+[sub_resource type="StyleBoxFlat" id="slider_track"]
+bg_color = Color(0.06, 0.06, 0.13, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 0.45)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.83, 1, 0.2)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="slider_fill"]
+bg_color = Color(0, 0.5, 0.7, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="slider_fill_hi"]
+bg_color = Color(0, 0.7, 1, 0.75)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="btn_back_n"]
+bg_color = Color(0.1, 0.08, 0, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.72, 0, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0.72, 0, 0.4)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_back_p"]
+bg_color = Color(0.3, 0.22, 0, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.72, 0, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0.72, 0, 0.25)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="btn_back_h"]
+bg_color = Color(0.2, 0.15, 0, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.72, 0, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(1, 0.72, 0, 0.7)
+shadow_size = 16
+
+[node name="Settings" type="Control" unique_id=327857807]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_x2hje")
+
+[node name="BG" type="ColorRect" parent="." unique_id=594697686]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.028, 0.028, 0.065, 1)
+
+[node name="TopBar" type="ColorRect" parent="." unique_id=1240353164]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0, 0.83, 1, 0.75)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=642397967]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="CenterContainer" unique_id=1535000322]
+layout_mode = 2
+theme_override_styles/panel = SubResource("card")
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Card" unique_id=1564234260]
+layout_mode = 2
+theme_override_constants/margin_left = 56
+theme_override_constants/margin_top = 44
+theme_override_constants/margin_right = 56
+theme_override_constants/margin_bottom = 44
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/Card/Margin" unique_id=828400110]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=356395182]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.83, 1, 1)
+theme_override_colors/font_shadow_color = Color(1, 0, 0.43, 0.45)
+theme_override_constants/shadow_outline_size = 10
+theme_override_font_sizes/font_size = 52
+text = "⚙ SETTINGS"
+horizontal_alignment = 1
+
+[node name="TitleDivider" type="ColorRect" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=1606766971]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0, 0.83, 1, 0.22)
+
+[node name="SectionGap" type="Control" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=1719475558]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="SectionLabel" type="Label" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=866958645]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.42, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+text = "MASTER VOLUME"
+horizontal_alignment = 1
+
+[node name="VolumeLabel" type="Label" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=1433154499]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.83, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0.83, 1, 0.35)
+theme_override_constants/shadow_outline_size = 6
+theme_override_font_sizes/font_size = 28
+text = "Volume: 0 dB"
+horizontal_alignment = 1
+
+[node name="VolumeSlider" type="HSlider" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=361119499]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/slider = SubResource("slider_track")
+theme_override_styles/grabber_area = SubResource("slider_fill")
+theme_override_styles/grabber_area_highlight = SubResource("slider_fill_hi")
+min_value = -40.0
+max_value = 0.0
+
+[node name="VolumeContainer" type="HBoxContainer" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=1765393230]
+layout_mode = 2
+
+[node name="MinLabel" type="Label" parent="CenterContainer/Card/Margin/VBoxContainer/VolumeContainer" unique_id=1989091203]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.32, 0.38, 1)
+theme_override_font_sizes/font_size = 14
+text = "MUTE"
+
+[node name="Spacer" type="Control" parent="CenterContainer/Card/Margin/VBoxContainer/VolumeContainer" unique_id=1176710390]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MaxLabel" type="Label" parent="CenterContainer/Card/Margin/VBoxContainer/VolumeContainer" unique_id=875276397]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.72, 0, 0.75)
+theme_override_font_sizes/font_size = 14
+text = "0 dB  MAX"
+
+[node name="BottomGap" type="Control" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=371361015]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="CenterContainer/Card/Margin/VBoxContainer" unique_id=1952197042]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 74)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.72, 0, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.88, 0.5, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("btn_back_n")
+theme_override_styles/pressed = SubResource("btn_back_p")
+theme_override_styles/hover = SubResource("btn_back_h")
+text = "← BACK"

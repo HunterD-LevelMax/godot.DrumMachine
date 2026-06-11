@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://d1v3l0c1t3p0p"]
+
+[ext_resource type="Script" uid="uid://bs3df3g4tv88r" path="res://scripts/ui/velocity_popup.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="vel_bg"]
+bg_color = Color(0.06, 0.06, 0.12, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.83, 1, 0.5)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0.83, 1, 0.3)
+shadow_size = 4
+
+[node name="VelocityPopup" type="PanelContainer" unique_id=1712623230]
+theme_override_styles/panel = SubResource("vel_bg")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=447011957]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="Margin" unique_id=134923116]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Margin/VBox" unique_id=1343245393]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "VELOCITY"
+horizontal_alignment = 1
+
+[node name="Sep" type="HSeparator" parent="Margin/VBox" unique_id=829803828]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Btn0" type="Button" parent="Margin/VBox" unique_id=1219271340]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "✕  OFF"
+
+[node name="Btn1" type="Button" parent="Margin/VBox" unique_id=905185926]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "▪  LOW"
+
+[node name="Btn2" type="Button" parent="Margin/VBox" unique_id=973970748]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "▪▪  MED"
+
+[node name="Btn3" type="Button" parent="Margin/VBox" unique_id=395355919]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "▪▪▪  HIGH"
+
+[node name="Btn4" type="Button" parent="Margin/VBox" unique_id=387890189]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(304, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "▪▪▪▪  MAX"

@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://bs0undcat001"]
+
+[ext_resource type="Script" uid="uid://bbh0kgmacmwj1" path="res://scripts/ui/sound_category.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="cat_bg"]
+content_margin_left = 16.0
+content_margin_top = 4.0
+content_margin_right = 16.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0.83, 1, 0.07)
+
+[node name="SoundCategory" type="Label" unique_id=1835753361]
+theme_override_colors/font_color = Color(0, 0.83, 1, 0.5)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("cat_bg")
+script = ExtResource("1")
