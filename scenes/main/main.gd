@@ -104,6 +104,7 @@ func _ready() -> void:
 
 	_init_playhead()
 	_rebuild_all_rows()
+	_apply_sound_paths()
 
 	_timer.wait_time = _seq.timer_interval()
 	_timer.timeout.connect(_on_timer_timeout)
