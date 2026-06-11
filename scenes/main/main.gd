@@ -227,6 +227,7 @@ func _create_row_ui(row: int) -> void:
 
 	var cell := HBoxContainer.new()
 	cell.custom_minimum_size = Vector2(0, StepGridBuilder.BTN_SIZE)
+	cell.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	cell.add_theme_constant_override("separation", 6)
 	_row_panel.add_child(cell)
 
@@ -249,9 +250,12 @@ func _create_row_ui(row: int) -> void:
 	var label := Label.new()
 	label.text = DrumTheme.row_name(row)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_STOP
 	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
 	label.gui_input.connect(_mute.on_label_input.bind(row))
 	cell.add_child(label)
