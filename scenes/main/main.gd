@@ -212,6 +212,7 @@ func _rebuild_all_rows() -> void:
 
 	_add_row_btn.disabled = _seq.rows >= Sequencer.MAX_ROWS
 	_add_row_btn.text = "ADD ROW" if _seq.rows < Sequencer.MAX_ROWS else "MAX 10"
+	_mute.set_row_refs(_row_labels, _row_mute_btns, _row_snd_btns, _on_sound_btn_pressed_for_row)
 
 	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
 	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
@@ -441,6 +442,11 @@ func _on_sound_selected(row: int, path: String) -> void:
 func _apply_sound_paths() -> void:
 	for row in range(_seq.rows):
 		_music.set_stream(row, _seq.sound_paths[row])
+
+
+func _on_sound_btn_pressed_for_row(row: int) -> void:
+	if row < _row_snd_btns.size():
+		_on_sound_btn_pressed(row, _row_snd_btns[row] as Button)
 
 
 # ── Sequencer tick ────────────────────────────────────────────────────────────

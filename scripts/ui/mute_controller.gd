@@ -6,9 +6,11 @@ extends RefCounted
 var _seq: Sequencer
 var _row_labels:    Array = []
 var _row_mute_btns: Array = []
+var _row_snd_btns:  Array = []
 var _label_mute_timer: Timer = null
 var _label_mute_row: int = -1
 var _owner: Node
+var on_sound_pick: Callable
 
 
 func setup(owner: Node, seq: Sequencer) -> void:
@@ -16,16 +18,22 @@ func setup(owner: Node, seq: Sequencer) -> void:
 	_seq   = seq
 
 
-func set_row_refs(labels: Array, mute_btns: Array) -> void:
+func set_row_refs(labels: Array, mute_btns: Array, snd_btns: Array, p_on_sound_pick: Callable) -> void:
 	_row_labels    = labels
 	_row_mute_btns = mute_btns
+	_row_snd_btns  = snd_btns
+	on_sound_pick  = p_on_sound_pick
 
 
 func on_label_input(event: InputEvent, row: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_start_label_mute_timer(row)
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_start_label_mute_timer(row)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and on_sound_pick.is_valid():
+			on_sound_pick.call(row)
 	elif event is InputEventMouseButton and not event.pressed:
-		_cancel_label_mute_timer()
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_cancel_label_mute_timer()
 	elif event is InputEventScreenTouch and event.pressed:
 		_start_label_mute_timer(row)
 	elif event is InputEventScreenTouch and not event.pressed:
