@@ -29,8 +29,8 @@ func on_label_input(event: InputEvent, row: int) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_start_label_mute_timer(row)
-		elif event.button_index == MOUSE_BUTTON_RIGHT and on_sound_pick.is_valid():
-			on_sound_pick.call(row)
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_toggle_mute(row)
 	elif event is InputEventMouseButton and not event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_cancel_label_mute_timer()
@@ -38,6 +38,13 @@ func on_label_input(event: InputEvent, row: int) -> void:
 		_start_label_mute_timer(row)
 	elif event is InputEventScreenTouch and not event.pressed:
 		_cancel_label_mute_timer()
+
+
+func _toggle_mute(row: int) -> void:
+	if row < 0 or row >= _seq.rows:
+		return
+	var btn: Button = _row_mute_btns[row] as Button
+	btn.button_pressed = not btn.button_pressed
 
 
 func _start_label_mute_timer(row: int) -> void:
