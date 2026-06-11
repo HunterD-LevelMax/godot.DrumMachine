@@ -29,7 +29,7 @@ func on_label_input(event: InputEvent, row: int) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_start_label_mute_timer(row)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
+		elif event.is_action_pressed("right_click"):
 			_toggle_mute(row)
 	elif event is InputEventMouseButton and not event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
