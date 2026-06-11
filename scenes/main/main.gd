@@ -291,7 +291,7 @@ func _create_row_ui(row: int) -> void:
 	step_hbox.add_theme_constant_override("separation", StepGridBuilder.H_GAP)
 	_rows_container.add_child(step_hbox)
 	_grid.build_step_row(step_hbox, row, _seq.steps, _seq.grid,
-		_on_step_button_down, _on_step_button_up)
+		_on_step_button_down, _on_step_button_up, _on_step_context_requested)
 
 
 func _animate_row_in(_cell: HBoxContainer, _step_hbox: HBoxContainer) -> void:
@@ -400,6 +400,15 @@ func _on_long_press_timeout() -> void:
 	_lp_fired = true
 	if _lp_row >= 0:
 		_open_velocity_popup(_lp_row, _lp_step)
+
+
+func _on_step_context_requested(row: int, step: int) -> void:
+	_lp_timer.stop()
+	_lp_row = -1
+	_lp_step = -1
+	_lp_fired = false
+	_lp_consumed = false
+	_open_velocity_popup(row, step)
 
 
 func _do_cycle_velocity(row: int, step: int) -> void:

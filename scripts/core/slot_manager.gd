@@ -21,9 +21,9 @@ var on_refresh_steps: Callable
 
 
 func setup(owner: Control, seq: Sequencer, popups: PopupManager, music: MusicManager,
-           history: PatternHistory, timer: Timer, grid: StepGridBuilder,
-           p_on_rebuild: Callable, p_on_apply_sounds: Callable,
-           p_on_refresh_tempo: Callable, p_on_refresh_steps: Callable) -> void:
+		   history: PatternHistory, timer: Timer, grid: StepGridBuilder,
+		   p_on_rebuild: Callable, p_on_apply_sounds: Callable,
+		   p_on_refresh_tempo: Callable, p_on_refresh_steps: Callable) -> void:
 	_owner  = owner
 	_seq    = seq
 	_popups = popups
@@ -38,7 +38,7 @@ func setup(owner: Control, seq: Sequencer, popups: PopupManager, music: MusicMan
 
 
 func init(slot_a: Button, slot_b: Button, slot_c: Button, slot_d: Button,
-          save_btn: Button, load_btn: Button, inf_btn: Button) -> void:
+		  save_btn: Button, load_btn: Button, inf_btn: Button) -> void:
 	_slot_buttons = [slot_a, slot_b, slot_c, slot_d]
 	for i in range(4):
 		_slot_buttons[i].focus_mode = Control.FOCUS_NONE

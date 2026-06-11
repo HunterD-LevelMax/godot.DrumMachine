@@ -44,7 +44,8 @@ func build_step_numbers_header(hbox: HBoxContainer, steps: int) -> void:
 
 
 func build_step_row(hbox: HBoxContainer, row: int, steps: int, grid: Array,
-		on_down: Callable = Callable(), on_up: Callable = Callable()) -> void:
+		on_down: Callable = Callable(), on_up: Callable = Callable(),
+		on_context: Callable = Callable()) -> void:
 	hbox.add_theme_constant_override("separation", H_GAP)
 	_buttons.append([])
 	for step in range(steps):
@@ -55,6 +56,8 @@ func build_step_row(hbox: HBoxContainer, row: int, steps: int, grid: Array,
 			btn.button_down.connect(on_down.bind(row, step))
 		if on_up.is_valid():
 			btn.button_up.connect(on_up.bind(row, step))
+		if on_context.is_valid():
+			btn.gui_input.connect(_on_step_gui_input.bind(btn, row, step, on_context))
 		hbox.add_child(btn)
 		_buttons[row].append(btn)
 	_step_row_nodes.append(hbox)
@@ -78,6 +81,15 @@ func _create_step_button(row: int, step: int, grid: Array) -> Button:
 	btn.custom_minimum_size = Vector2(BTN_SIZE, BTN_SIZE)
 	refresh_step_visual(btn, grid[row][step], row, step)
 	return btn
+
+
+func _on_step_gui_input(event: InputEvent, btn: Button, row: int, step: int,
+		on_context: Callable) -> void:
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_RIGHT \
+			and event.pressed:
+		btn.accept_event()
+		on_context.call(row, step)
 
 
 func _make_spacer(w: int, h: int) -> Control:
