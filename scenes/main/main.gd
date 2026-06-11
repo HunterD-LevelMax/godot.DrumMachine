@@ -247,15 +247,17 @@ func _create_row_ui(row: int) -> void:
 	cell.add_child(mute_btn)
 	_row_mute_btns.append(mute_btn)
 
-	var label := Label.new()
+	var label := Button.new()
 	label.text = DrumTheme.row_name(row)
+	label.focus_mode = Control.FOCUS_NONE
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.mouse_filter = Control.MOUSE_FILTER_STOP
+	label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	label.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	label.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
 	label.gui_input.connect(_mute.on_label_input.bind(row))
 	cell.add_child(label)

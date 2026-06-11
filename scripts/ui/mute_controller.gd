@@ -75,7 +75,7 @@ func _on_label_mute_timeout() -> void:
 
 func on_mute_toggled(pressed: bool, row: int) -> void:
 	_seq.muted[row] = pressed
-	var lbl: Label = _row_labels[row]
+	var lbl: Button = _row_labels[row]
 	var target_color := Color(0.4, 0.4, 0.4) if pressed else Color(1, 1, 1)
 	var tween := lbl.create_tween()
 	tween.tween_property(lbl, "modulate", target_color, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
