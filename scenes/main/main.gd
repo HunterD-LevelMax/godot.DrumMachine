@@ -90,9 +90,9 @@ func _ready() -> void:
 	_lp_timer.timeout.connect(_on_long_press_timeout)
 	add_child(_lp_timer)
 
-	_step_area.get_v_scroll_bar().modulate.a = 0
 	_row_scroll.get_v_scroll_bar().modulate.a = 0
 	DrumTheme.style_h_scrollbar(_step_area)
+	DrumTheme.style_scrollbar(_step_area)
 	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
 	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
 
