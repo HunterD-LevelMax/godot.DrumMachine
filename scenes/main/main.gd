@@ -2,39 +2,29 @@
 ## DrumMachine scene controller.
 extends Control
 
-# ── Layout constants ──────────────────────────────────────────────────────────
-const BTN_SIZE  := 96
-const H_GAP     := 6
-const BEAT_GAP  := 10
-const NUM_H     := 28
-
-# ── Input constants ───────────────────────────────────────────────────────────
 const LONG_PRESS_SEC := 0.45
 const MAX_TAP_COUNT  := 8
 
-# ── Popup scenes ──────────────────────────────────────────────────────────────
-const VELOCITY_POPUP_SCENE = preload("res://scenes/ui/velocity_popup.tscn")
-const SOUND_PICKER_SCENE   = preload("res://scenes/ui/sound_picker.tscn")
-const HELP_POPUP_SCENE     = preload("res://scenes/ui/help_popup.tscn")
-const CONFIRM_POPUP_SCENE  = preload("res://scenes/ui/confirm_popup.tscn")
+const PLAYHEAD_HEIGHT := 4
 
-# ── Scene references ──────────────────────────────────────────────────────────
+const _KEY_ROW_MAP: Array[Key] = [
+	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
+	KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
+]
+
 @onready var _timer: Timer = $Timer
 
 @onready var _increase_tempo_btn: Button = %IncreaseTempoButton
 @onready var _decrease_tempo_btn: Button = %DecreaseTempoButton
 @onready var _tempo_label:        Label  = %TempoLabel
-
 @onready var _increase_steps_btn: Button = %IncreaseStepsButton
 @onready var _decrease_steps_btn: Button = %DecreaseStepsButton
 @onready var _steps_label:        Label  = %StepsLabel
-
 @onready var _play_stop_btn: Button = %PlayStopButton
 @onready var _tap_btn:       Button = %TapButton
 @onready var _clear_btn:     Button = %ClearButton
 @onready var _random_btn:    Button = %RandomButton
 @onready var _add_row_btn:   Button = %AddRowButton
-
 @onready var _slot_btn_a: Button = %SlotButtonA
 @onready var _slot_btn_b: Button = %SlotButtonB
 @onready var _slot_btn_c: Button = %SlotButtonC
@@ -42,57 +32,55 @@ const CONFIRM_POPUP_SCENE  = preload("res://scenes/ui/confirm_popup.tscn")
 @onready var _save_btn:   Button = %SaveButton
 @onready var _load_btn:   Button = %LoadButton
 @onready var _inf_btn:    Button = $MainPanel/VBox/SlotsContainer/InfButton
+@onready var _row_panel:      VBoxContainer    = %RowVBox
+@onready var _row_scroll:     ScrollContainer  = %RowPanel
+@onready var _rows_container: VBoxContainer    = %RowsContainer
+@onready var _step_num_row:   HBoxContainer    = %StepNumRow
+@onready var _step_area:      ScrollContainer  = %StepArea
+@onready var _step_vbox:      VBoxContainer     = %StepVBox
 
-@onready var _row_panel:        VBoxContainer    = %RowVBox
-@onready var _row_scroll:       ScrollContainer  = %RowPanel
-@onready var _rows_container:   VBoxContainer    = %RowsContainer
-@onready var _step_num_row:     HBoxContainer    = %StepNumRow
-@onready var _step_area:        ScrollContainer  = %StepArea
-
-# ── Model / Logic ─────────────────────────────────────────────────────────────
 var _seq:     Sequencer
-var _history: PatternHistory
+var _history: PatternHistory = null
 var _music:   MusicManager
+var _grid:    StepGridBuilder
+var _popups:  PopupManager
 
-# ── View state ────────────────────────────────────────────────────────────────
-var _buttons:        Array = []   # [row][step] → Button
-var _row_labels:     Array = []   # [row] → Label
-var _row_snd_btns:   Array = []   # [row] → Button (sound)
-var _row_mute_btns:  Array = []   # [row] → Button (mute)
-var _step_row_nodes: Array = []   # [row] → HBoxContainer
-var _style_cache:  Dictionary = {}
-var _pulse_tweens: Dictionary = {}
-var _prev_step:    int = -1
+var _row_labels:    Array = []
+var _row_snd_btns:  Array = []
+var _row_mute_btns: Array = []
 
 var _active_slot:  int   = 0
 var _slot_buttons: Array = []
 var _syncing_scroll: bool = false
 
-# ── Long press state ──────────────────────────────────────────────────────────
 var _lp_timer:    Timer
 var _lp_row:      int  = -1
 var _lp_step:     int  = -1
 var _lp_fired:    bool = false
 var _lp_consumed: bool = false
 
-# ── Popups ────────────────────────────────────────────────────────────────────
-var _velocity_popup: VelocityPopup = null
-var _popup_backdrop: ColorRect     = null
-var _sound_picker:          SoundPicker = null
-var _sound_picker_backdrop: ColorRect   = null
-var _help_popup:          HelpPopup = null
-var _help_popup_backdrop: ColorRect = null
-var _confirm_popup:          ConfirmPopup = null
-var _confirm_popup_backdrop: ColorRect    = null
-
-# ── Tap tempo ─────────────────────────────────────────────────────────────────
 var _tap_times: Array[float] = []
+
+var _playhead: ColorRect
+var _playhead_glow: ColorRect
+var _label_mute_timer: Timer = null
+var _label_mute_row: int = -1
+
+var _flash_tweens: Dictionary = {}
+
+var _pinch_active: bool = false
+var _pinch_start_dist: float = 0.0
+var _pinch_start_btn_size: float = 0.0
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 func _ready() -> void:
 	_seq     = Sequencer.new()
 	_history = PatternHistory.new()
 	_music   = MusicManager.new()
+	_grid    = StepGridBuilder.new()
+	_popups  = PopupManager.new()
+	_popups.setup(self)
 	_music.setup(self)
 	_music.set_master_volume(GameSettings.master_volume_db)
 
@@ -105,10 +93,10 @@ func _ready() -> void:
 	_step_area.get_v_scroll_bar().modulate.a = 0
 	_row_scroll.get_v_scroll_bar().modulate.a = 0
 	DrumTheme.style_h_scrollbar(_step_area)
-
 	_row_scroll.get_v_scroll_bar().value_changed.connect(_sync_step_scroll)
 	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
 
+	_init_playhead()
 	_rebuild_all_rows()
 
 	_timer.wait_time = _seq.timer_interval()
@@ -121,6 +109,45 @@ func _ready() -> void:
 	_refresh_steps_label()
 	_refresh_play_button()
 	_add_row_btn.pressed.connect(_on_add_row)
+
+
+# ── Playhead ──────────────────────────────────────────────────────────────────
+
+func _init_playhead() -> void:
+	_playhead = ColorRect.new()
+	_playhead.color = Color(0, 0.83, 1, 0.85)
+	_playhead.custom_minimum_size = Vector2(0, PLAYHEAD_HEIGHT)
+	_playhead.size = Vector2(0, PLAYHEAD_HEIGHT)
+	_playhead.visible = false
+	_step_vbox.add_child(_playhead)
+	_step_vbox.move_child(_playhead, 0)
+
+	_playhead_glow = ColorRect.new()
+	_playhead_glow.color = Color(0, 0.83, 1, 0.25)
+	_playhead_glow.custom_minimum_size = Vector2(0, PLAYHEAD_HEIGHT + 8)
+	_playhead_glow.size = Vector2(0, PLAYHEAD_HEIGHT + 8)
+	_playhead_glow.visible = false
+	_step_vbox.add_child(_playhead_glow)
+	_step_vbox.move_child(_playhead_glow, 0)
+
+
+func _update_playhead() -> void:
+	if not _seq.is_playing or _seq.current_step >= _seq.steps:
+		_playhead.visible = false
+		_playhead_glow.visible = false
+		return
+	_playhead.visible = true
+	_playhead_glow.visible = true
+	var btn_size := StepGridBuilder.BTN_SIZE
+	var h_gap    := StepGridBuilder.H_GAP
+	var beat_gap := StepGridBuilder.BEAT_GAP
+	var step := _seq.current_step
+	var separators_before := step / 4
+	var x := step * (btn_size + h_gap) + separators_before * (beat_gap - h_gap)
+	_playhead.position = Vector2(x, 0)
+	_playhead.size = Vector2(btn_size, PLAYHEAD_HEIGHT)
+	_playhead_glow.position = Vector2(x - 2, -4)
+	_playhead_glow.size = Vector2(btn_size + 4, PLAYHEAD_HEIGHT + 8)
 
 
 # ── Scroll sync ──────────────────────────────────────────────────────────────
@@ -155,19 +182,19 @@ func _rebuild_all_rows() -> void:
 		child.set_process(false)
 		child.set_process_input(false)
 		child.queue_free()
-	_buttons.clear()
+	_grid.clear()
 	_row_labels.clear()
 	_row_snd_btns.clear()
 	_row_mute_btns.clear()
-	_step_row_nodes.clear()
-	_style_cache.clear()
-	_pulse_tweens.clear()
-	_prev_step = -1
+	for tween: Tween in _flash_tweens.values():
+		if tween != null:
+			tween.kill()
+	_flash_tweens.clear()
 
-	_step_num_row.add_theme_constant_override("separation", H_GAP)
+	_step_num_row.add_theme_constant_override("separation", StepGridBuilder.H_GAP)
 	for child in _step_num_row.get_children():
 		child.queue_free()
-	_build_step_numbers_header(_step_num_row)
+	_grid.build_step_numbers_header(_step_num_row, _seq.steps)
 
 	_music.set_player_count(_seq.rows)
 
@@ -181,14 +208,15 @@ func _rebuild_all_rows() -> void:
 	_step_area.get_v_scroll_bar().value_changed.connect(_sync_row_scroll)
 	_row_scroll.scroll_vertical = 0
 	_step_area.scroll_vertical = 0
+	_playhead.visible = false
+	_playhead_glow.visible = false
 
 
 func _create_row_ui(row: int) -> void:
 	var color := DrumTheme.row_color(row)
 
-	# ── Left panel: label, mute, sound ──────────────────────────────────────
 	var cell := HBoxContainer.new()
-	cell.custom_minimum_size = Vector2(0, BTN_SIZE)
+	cell.custom_minimum_size = Vector2(0, StepGridBuilder.BTN_SIZE)
 	cell.add_theme_constant_override("separation", 6)
 	_row_panel.add_child(cell)
 
@@ -215,6 +243,7 @@ func _create_row_ui(row: int) -> void:
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
+	label.gui_input.connect(_on_label_input.bind(row))
 	cell.add_child(label)
 	_row_labels.append(label)
 
@@ -226,7 +255,7 @@ func _create_row_ui(row: int) -> void:
 	snd_btn.add_theme_font_size_override("font_size", 22)
 	snd_btn.add_theme_color_override("font_color", Color(0, 0.83, 1, 0.65))
 	snd_btn.tooltip_text = _seq.sound_paths[row].get_file().get_basename().replace("_", " ")
-	snd_btn.pressed.connect(_open_sound_picker.bind(row, snd_btn))
+	snd_btn.pressed.connect(_on_sound_btn_pressed.bind(row, snd_btn))
 	cell.add_child(snd_btn)
 	_row_snd_btns.append(snd_btn)
 
@@ -242,14 +271,15 @@ func _create_row_ui(row: int) -> void:
 		del_btn.pressed.connect(_on_delete_row.bind(row))
 		cell.add_child(del_btn)
 
-	# ── Right panel: step buttons ───────────────────────────────────────────
 	var step_hbox := HBoxContainer.new()
-	step_hbox.add_theme_constant_override("separation", H_GAP)
+	step_hbox.add_theme_constant_override("separation", StepGridBuilder.H_GAP)
 	_rows_container.add_child(step_hbox)
-	_step_row_nodes.append(step_hbox)
+	_grid.build_step_row(step_hbox, row, _seq.steps, _seq.grid,
+		_on_step_button_down, _on_step_button_up)
 
-	_buttons.append([])
-	_build_step_row(step_hbox, row)
+
+func _animate_row_in(_cell: HBoxContainer, _step_hbox: HBoxContainer) -> void:
+	pass
 
 
 func _on_delete_row(row: int) -> void:
@@ -268,7 +298,7 @@ func _on_delete_row(row: int) -> void:
 	if was_playing:
 		_seq.is_playing = true
 		_seq.current_step = 0
-		_prev_step = -1
+		_grid.set_prev_step(-1)
 		_timer.start()
 
 
@@ -283,8 +313,50 @@ func _on_add_row() -> void:
 		if was_playing:
 			_seq.is_playing = true
 			_seq.current_step = 0
-			_prev_step = -1
+			_grid.set_prev_step(-1)
 			_timer.start()
+
+
+# ── Label long-press mute ─────────────────────────────────────────────────────
+
+func _on_label_input(event: InputEvent, row: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_cancel_label_mute_timer()
+		_label_mute_row = row
+		_label_mute_timer = Timer.new()
+		_label_mute_timer.one_shot = true
+		_label_mute_timer.wait_time = 0.5
+		_label_mute_timer.timeout.connect(_on_label_mute_timeout)
+		add_child(_label_mute_timer)
+		_label_mute_timer.start()
+	elif event is InputEventMouseButton and not event.pressed:
+		_cancel_label_mute_timer()
+	elif event is InputEventScreenTouch and event.pressed:
+		_cancel_label_mute_timer()
+		_label_mute_row = row
+		_label_mute_timer = Timer.new()
+		_label_mute_timer.one_shot = true
+		_label_mute_timer.wait_time = 0.5
+		_label_mute_timer.timeout.connect(_on_label_mute_timeout)
+		add_child(_label_mute_timer)
+		_label_mute_timer.start()
+	elif event is InputEventScreenTouch and not event.pressed:
+		_cancel_label_mute_timer()
+
+
+func _cancel_label_mute_timer() -> void:
+	if _label_mute_timer != null and _label_mute_timer.is_inside_tree():
+		_label_mute_timer.stop()
+		_label_mute_timer.queue_free()
+		_label_mute_timer = null
+	_label_mute_row = -1
+
+
+func _on_label_mute_timeout() -> void:
+	if _label_mute_row >= 0 and _label_mute_row < _seq.rows:
+		(_row_mute_btns[_label_mute_row] as Button).button_pressed = not _seq.muted[_label_mute_row]
+	_label_mute_row = -1
+	_cancel_label_mute_timer()
 
 
 # ── Connections ───────────────────────────────────────────────────────────────
@@ -298,56 +370,38 @@ func _connect_transport_buttons() -> void:
 	_tap_btn.pressed.connect(_on_tap_tempo)
 	_clear_btn.pressed.connect(_on_clear_pattern)
 	_random_btn.pressed.connect(_on_randomize_pattern)
+	_animate_button_press(_increase_tempo_btn)
+	_animate_button_press(_decrease_tempo_btn)
+	_animate_button_press(_increase_steps_btn)
+	_animate_button_press(_decrease_steps_btn)
+	_animate_button_press(_tap_btn)
+	_animate_button_press(_clear_btn)
+	_animate_button_press(_random_btn)
+	_animate_button_press(_add_row_btn)
+	_animate_button_press(_save_btn)
+	_animate_button_press(_load_btn)
 
 
-# ── Grid UI ───────────────────────────────────────────────────────────────────
-
-func _build_step_numbers_header(hbox: HBoxContainer) -> void:
-	hbox.add_theme_constant_override("separation", H_GAP)
-	for s in range(_seq.steps):
-		if s > 0 and s % 4 == 0:
-			hbox.add_child(_make_spacer(BEAT_GAP, NUM_H))
-		var lbl := Label.new()
-		lbl.custom_minimum_size  = Vector2(BTN_SIZE, NUM_H)
-		lbl.text                 = str(s + 1)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 12)
-		lbl.add_theme_color_override("font_color",
-			Color(0.58, 0.60, 0.92) if s % 4 == 0 else Color(0.20, 0.20, 0.30))
-		hbox.add_child(lbl)
-
-
-func _build_step_row(hbox: HBoxContainer, row: int) -> void:
-	hbox.add_theme_constant_override("separation", H_GAP)
-	for step in range(_seq.steps):
-		if step > 0 and step % 4 == 0:
-			hbox.add_child(_make_spacer(BEAT_GAP, BTN_SIZE))
-		var btn := _create_step_button(row, step)
-		hbox.add_child(btn)
-		_buttons[row].append(btn)
-
-
-func _create_step_button(row: int, step: int) -> Button:
-	var btn := Button.new()
-	btn.focus_mode          = Control.FOCUS_NONE
-	btn.custom_minimum_size = Vector2(BTN_SIZE, BTN_SIZE)
-	btn.button_down.connect(_on_step_button_down.bind(row, step))
-	btn.button_up.connect(_on_step_button_up.bind(row, step))
-	_refresh_step_visual(btn, _seq.grid[row][step], row, step)
-	return btn
-
-
-func _make_spacer(w: int, h: int) -> Control:
-	var c := Control.new()
-	c.custom_minimum_size = Vector2(w, h)
-	return c
+func _animate_button_press(btn: Button) -> void:
+	btn.button_down.connect(func() -> void:
+		var tween := btn.create_tween()
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_BACK)
+		tween.tween_property(btn, "scale", Vector2(0.9, 0.9), 0.04)
+	)
+	btn.button_up.connect(func() -> void:
+		var tween := btn.create_tween()
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_ELASTIC)
+		tween.tween_property(btn, "scale", Vector2.ONE, 0.15)
+	)
 
 
 # ── Long press ────────────────────────────────────────────────────────────────
 
 func _on_step_button_down(row: int, step: int) -> void:
-	if _velocity_popup != null:
-		_close_velocity_popup()
+	if _popups.velocity_popup != null:
+		_popups.close_velocity()
 		_lp_consumed = true
 		return
 	_lp_consumed = false
@@ -374,12 +428,12 @@ func _on_long_press_timeout() -> void:
 		_open_velocity_popup(_lp_row, _lp_step)
 
 
-# ── Velocity cycling ─────────────────────────────────────────────────────────
-
 func _do_cycle_velocity(row: int, step: int) -> void:
 	_history.push(_seq.get_grid_snapshot())
 	var v := _seq.cycle_velocity(row, step)
-	_refresh_step_visual(_buttons[row][step], v, row, step)
+	var btn: Button = _grid.get_buttons()[row][step]
+	_grid.refresh_step_visual(btn, v, row, step)
+	_grid.bounce_button(btn)
 	if v > 0 and not _seq.muted[row]:
 		_music.play_row(row, v)
 
@@ -387,69 +441,26 @@ func _do_cycle_velocity(row: int, step: int) -> void:
 # ── Velocity popup ────────────────────────────────────────────────────────────
 
 func _open_velocity_popup(row: int, step: int) -> void:
-	_close_velocity_popup()
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.01)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.z_index = 10
-	backdrop.gui_input.connect(func(e: InputEvent) -> void:
-		if (e is InputEventMouseButton and e.pressed) or \
-		   (e is InputEventScreenTouch and e.pressed):
-			_close_velocity_popup()
+	_popups.open_velocity(
+		row, step, _seq.grid[row][step],
+		_grid.get_buttons()[row][step] as Button,
+		_on_velocity_chosen
 	)
-	add_child(backdrop)
-	_popup_backdrop = backdrop
-	var popup: VelocityPopup = VELOCITY_POPUP_SCENE.instantiate()
-	popup.velocity_chosen.connect(_on_velocity_chosen)
-	add_child(popup)
-	popup.setup(row, step, _seq.grid[row][step])
-	popup.position_near(
-		(_buttons[row][step] as Button).get_global_rect(),
-		get_viewport_rect().size
-	)
-	_velocity_popup = popup
 
 
 func _on_velocity_chosen(row: int, step: int, velocity: int) -> void:
 	_history.push(_seq.get_grid_snapshot())
 	_seq.set_velocity(row, step, velocity)
-	_refresh_step_visual(_buttons[row][step], velocity, row, step)
+	_grid.refresh_step_visual(_grid.get_buttons()[row][step], velocity, row, step)
 	if velocity > 0 and not _seq.muted[row]:
 		_music.play_row(row, velocity)
-	_close_velocity_popup()
-
-
-func _close_velocity_popup() -> void:
-	if is_instance_valid(_velocity_popup):
-		_velocity_popup.queue_free()
-	if is_instance_valid(_popup_backdrop):
-		_popup_backdrop.queue_free()
-	_velocity_popup = null
-	_popup_backdrop = null
+	_popups.close_velocity()
 
 
 # ── Sound picker ──────────────────────────────────────────────────────────────
 
-func _open_sound_picker(row: int, anchor_btn: Button) -> void:
-	_close_sound_picker()
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.01)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.z_index = 10
-	backdrop.gui_input.connect(func(e: InputEvent) -> void:
-		if (e is InputEventMouseButton and e.pressed) or \
-		   (e is InputEventScreenTouch and e.pressed):
-			_close_sound_picker()
-	)
-	add_child(backdrop)
-	_sound_picker_backdrop = backdrop
-	var picker: SoundPicker = SOUND_PICKER_SCENE.instantiate()
-	picker.z_index = 11
-	picker.sound_selected.connect(_on_sound_selected)
-	add_child(picker)
-	picker.setup(row, _seq.sound_paths[row])
-	picker.position_near(anchor_btn.get_global_rect(), get_viewport_rect().size)
-	_sound_picker = picker
+func _on_sound_btn_pressed(row: int, anchor_btn: Button) -> void:
+	_popups.open_sound_picker(row, _seq.sound_paths[row], anchor_btn, _on_sound_selected)
 
 
 func _on_sound_selected(row: int, path: String) -> void:
@@ -457,16 +468,7 @@ func _on_sound_selected(row: int, path: String) -> void:
 	_music.set_stream(row, path)
 	if row < _row_snd_btns.size():
 		(_row_snd_btns[row] as Button).tooltip_text = path.get_file().get_basename().replace("_", " ")
-	_close_sound_picker()
-
-
-func _close_sound_picker() -> void:
-	if is_instance_valid(_sound_picker):
-		_sound_picker.queue_free()
-	if is_instance_valid(_sound_picker_backdrop):
-		_sound_picker_backdrop.queue_free()
-	_sound_picker = null
-	_sound_picker_backdrop = null
+	_popups.close_sound_picker()
 
 
 func _apply_sound_paths() -> void:
@@ -478,8 +480,10 @@ func _apply_sound_paths() -> void:
 
 func _on_mute_toggled(pressed: bool, row: int) -> void:
 	_seq.muted[row] = pressed
-	(_row_labels[row] as Label).modulate = Color(0.4, 0.4, 0.4) if pressed else Color(1, 1, 1)
-	var color := DrumTheme.row_color(row)
+	var lbl: Label = _row_labels[row]
+	var target_color := Color(0.4, 0.4, 0.4) if pressed else Color(1, 1, 1)
+	var tween := lbl.create_tween()
+	tween.tween_property(lbl, "modulate", target_color, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	var mute_style := DrumTheme.mute_style(pressed, row)
 	(_row_mute_btns[row] as Button).add_theme_stylebox_override("normal", mute_style)
 	(_row_mute_btns[row] as Button).add_theme_stylebox_override("pressed", mute_style)
@@ -492,13 +496,16 @@ func _on_timer_timeout() -> void:
 	if not _seq.is_playing:
 		return
 	var velocities := _seq.current_step_velocities()
-	for row in range(_seq.rows):
-		if row >= _buttons.size():
+	var buttons := _grid.get_buttons()
+	var row_count := _seq.rows
+	for row in range(row_count):
+		if row >= buttons.size():
 			continue
 		if velocities[row] > 0:
 			_music.play_row(row, velocities[row])
 			_flash_row_label(row)
-	_highlight_step(_seq.current_step)
+	_grid.highlight_step(_seq.current_step, row_count, _seq.steps, _seq.grid)
+	_update_playhead()
 	_seq.advance()
 
 
@@ -508,75 +515,32 @@ func _flash_row_label(row: int) -> void:
 	if row >= _row_labels.size():
 		return
 	var lbl: Label = _row_labels[row]
+	if _flash_tweens.has(lbl) and _flash_tweens[lbl] != null:
+		_flash_tweens[lbl].kill()
 	var tween := create_tween()
+	_flash_tweens[lbl] = tween
 	tween.tween_property(lbl, "modulate", Color(2.8, 2.8, 2.8), 0.04)
 	tween.tween_property(lbl, "modulate", Color(1.0, 1.0, 1.0), 0.18)
-
-
-func _pulse_button(btn: Button) -> void:
-	if _pulse_tweens.has(btn) and _pulse_tweens[btn] != null:
-		_pulse_tweens[btn].kill()
-	var tween := create_tween()
-	_pulse_tweens[btn] = tween
-	tween.set_parallel(true)
-	tween.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.07)
-	tween.tween_property(btn, "scale", Vector2.ONE, 0.13).set_delay(0.07)
-
-
-func _highlight_step(step: int) -> void:
-	if _prev_step != -1 and _prev_step < _seq.steps:
-		for row in range(_seq.rows):
-			if row < _buttons.size() and _prev_step < _buttons[row].size():
-				_buttons[row][_prev_step].modulate = Color(1, 1, 1)
-	for row in range(_seq.rows):
-		if row < _buttons.size() and step < _buttons[row].size():
-			var btn: Button = _buttons[row][step]
-			btn.modulate = Color(2.4, 2.4, 2.4)
-			if _seq.grid[row][step] > 0:
-				_pulse_button(btn)
-	_prev_step = step
-
-
-func _refresh_step_visual(btn: Button, velocity: int, row: int, step: int) -> void:
-	var key := Vector3i(velocity, row, 1 if step % 4 == 0 else 0)
-	var styles: Array[StyleBoxFlat]
-	if _style_cache.has(key):
-		styles = _style_cache[key]
-	else:
-		styles = DrumTheme.step_styles(velocity, row, step % 4 == 0)
-		_style_cache[key] = styles
-	btn.add_theme_stylebox_override("normal",  styles[0])
-	btn.add_theme_stylebox_override("hover",   styles[1])
-	btn.add_theme_stylebox_override("pressed", styles[2])
-	if velocity in [1, 2, 3]:
-		btn.text = str(velocity)
-		btn.add_theme_font_size_override("font_size", 13)
-		btn.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
-	else:
-		btn.text = ""
-
-
-func _refresh_all_step_visuals() -> void:
-	for row in range(_seq.rows):
-		for step in range(_seq.steps):
-			if row < _buttons.size() and step < _buttons[row].size():
-				_refresh_step_visual(_buttons[row][step], _seq.grid[row][step], row, step)
 
 
 # ── Play / Stop ───────────────────────────────────────────────────────────────
 
 func _on_play_stop() -> void:
+	_grid.bounce_button(_play_stop_btn)
 	_seq.is_playing = not _seq.is_playing
 	if _seq.is_playing:
 		_seq.current_step = 0
-		_prev_step        = -1
+		_grid.set_prev_step(-1)
 		_timer.start()
 	else:
 		_timer.stop()
-		if _prev_step != -1:
-			for row in range(_seq.rows):
-				if row < _buttons.size() and _prev_step < _buttons[row].size():
-					_buttons[row][_prev_step].modulate = Color(1, 1, 1)
+		_grid.clear_highlight(_seq.rows, _seq.steps)
+		_playhead.visible = false
+		_playhead_glow.visible = false
+		for tween: Tween in _flash_tweens.values():
+			if tween != null:
+				tween.kill()
+		_flash_tweens.clear()
 	_refresh_play_button()
 
 
@@ -611,14 +575,16 @@ func _on_clear_pattern() -> void:
 	_history.push(_seq.get_grid_snapshot())
 	_seq.clear()
 	_seq.current_step = 0
-	_prev_step        = -1
-	_refresh_all_step_visuals()
+	_grid.set_prev_step(-1)
+	_grid.refresh_all_step_visuals(_seq.rows, _seq.steps, _seq.grid)
+	_grid.ripple_grid(_seq.rows, _seq.steps)
 
 
 func _on_randomize_pattern() -> void:
 	_history.push(_seq.get_grid_snapshot())
 	_seq.randomize()
-	_refresh_all_step_visuals()
+	_grid.refresh_all_step_visuals(_seq.rows, _seq.steps, _seq.grid)
+	_grid.ripple_grid(_seq.rows, _seq.steps)
 
 
 # ── Undo / Redo ───────────────────────────────────────────────────────────────
@@ -635,7 +601,7 @@ func _undo() -> void:
 	if was_playing:
 		_seq.is_playing = true
 		_seq.current_step = 0
-		_prev_step = -1
+		_grid.set_prev_step(-1)
 		_timer.start()
 
 
@@ -651,7 +617,7 @@ func _redo() -> void:
 	if was_playing:
 		_seq.is_playing = true
 		_seq.current_step = 0
-		_prev_step = -1
+		_grid.set_prev_step(-1)
 		_timer.start()
 
 
@@ -659,7 +625,7 @@ func _redo() -> void:
 
 func _on_save_pressed() -> void:
 	if SaveManager.slot_exists(_active_slot):
-		_open_confirm_popup(
+		_popups.open_confirm(
 			"SAVE TO SLOT %s?" % SaveManager.SLOT_NAMES[_active_slot],
 			"This will overwrite your existing pattern.",
 			"OVERWRITE",
@@ -670,7 +636,7 @@ func _on_save_pressed() -> void:
 
 
 func _do_save() -> void:
-	_close_confirm_popup()
+	_popups.close_confirm()
 	SaveManager.save(_active_slot, _seq.to_dict())
 	_refresh_slot_buttons()
 
@@ -694,7 +660,7 @@ func _on_load_pressed() -> void:
 	if was_playing:
 		_seq.is_playing = true
 		_seq.current_step = 0
-		_prev_step = -1
+		_grid.set_prev_step(-1)
 		_timer.start()
 
 
@@ -709,13 +675,19 @@ func _init_slot_ui() -> void:
 	_apply_action_button(_load_btn, Color("#1FB6FF"))
 	_save_btn.pressed.connect(_on_save_pressed)
 	_load_btn.pressed.connect(_on_load_pressed)
-	_inf_btn.pressed.connect(_open_help_popup)
+	_inf_btn.pressed.connect(_popups.open_help)
 	_refresh_slot_buttons()
 
 
 func _on_slot_selected(slot: int) -> void:
 	_active_slot = slot
 	_refresh_slot_buttons()
+	var btn: Button = _slot_buttons[slot]
+	var tw := btn.create_tween()
+	tw.set_ease(Tween.EASE_OUT)
+	tw.set_trans(Tween.TRANS_ELASTIC)
+	tw.tween_property(btn, "scale", Vector2(0.88, 0.88), 0.04)
+	tw.tween_property(btn, "scale", Vector2.ONE, 0.14)
 
 
 func _refresh_slot_buttons() -> void:
@@ -758,44 +730,59 @@ func _on_decrease_tempo() -> void:
 
 func _refresh_tempo_label() -> void:
 	_tempo_label.text = "%d BPM" % _seq.tempo
+	var tw := _tempo_label.create_tween()
+	tw.set_ease(Tween.EASE_OUT)
+	tw.set_trans(Tween.TRANS_ELASTIC)
+	tw.tween_property(_tempo_label, "scale", Vector2(1.15, 1.15), 0.05)
+	tw.tween_property(_tempo_label, "scale", Vector2.ONE, 0.12)
 
 
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 func _on_increase_steps() -> void:
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
+	_pause_for_rebuild()
 	_seq.resize_steps(_seq.steps + 4)
 	_rebuild_all_rows()
 	_apply_sound_paths()
 	_refresh_steps_label()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_prev_step = -1
-		_timer.start()
+	_resume_after_rebuild()
 
 
 func _on_decrease_steps() -> void:
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
+	_pause_for_rebuild()
 	_seq.resize_steps(_seq.steps - 4)
 	_rebuild_all_rows()
 	_apply_sound_paths()
 	_refresh_steps_label()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_prev_step = -1
-		_timer.start()
+	_resume_after_rebuild()
 
 
 func _refresh_steps_label() -> void:
 	_steps_label.text = str(_seq.steps)
+	var tw := _steps_label.create_tween()
+	tw.set_ease(Tween.EASE_OUT)
+	tw.set_trans(Tween.TRANS_ELASTIC)
+	tw.tween_property(_steps_label, "scale", Vector2(1.15, 1.15), 0.05)
+	tw.tween_property(_steps_label, "scale", Vector2.ONE, 0.12)
+
+
+# ── Pause/Resume helper ──────────────────────────────────────────────────────
+
+var _was_playing_before_rebuild: bool = false
+
+func _pause_for_rebuild() -> void:
+	_was_playing_before_rebuild = _seq.is_playing
+	if _was_playing_before_rebuild:
+		_seq.is_playing = false
+		_timer.stop()
+
+
+func _resume_after_rebuild() -> void:
+	if _was_playing_before_rebuild:
+		_seq.is_playing = true
+		_seq.current_step = 0
+		_grid.set_prev_step(-1)
+		_timer.start()
 
 
 # ── Tap Tempo ─────────────────────────────────────────────────────────────────
@@ -824,8 +811,8 @@ func _on_tap_tempo() -> void:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed:
 		return
-	if _velocity_popup != null:
-		_close_velocity_popup()
+	if _popups.velocity_popup != null:
+		_popups.close_velocity()
 		return
 	if event.ctrl_pressed:
 		match event.keycode:
@@ -833,82 +820,13 @@ func _input(event: InputEvent) -> void:
 			KEY_Y: _redo()
 		return
 	match event.keycode:
-		KEY_1: if _seq.rows > 0 and not _seq.muted[0]: _music.play_row(0, 4)
-		KEY_2: if _seq.rows > 1 and not _seq.muted[1]: _music.play_row(1, 4)
-		KEY_3: if _seq.rows > 2 and not _seq.muted[2]: _music.play_row(2, 4)
-		KEY_4: if _seq.rows > 3 and not _seq.muted[3]: _music.play_row(3, 4)
-		KEY_5: if _seq.rows > 4 and not _seq.muted[4]: _music.play_row(4, 4)
-		KEY_6: if _seq.rows > 5 and not _seq.muted[5]: _music.play_row(5, 4)
-		KEY_7: if _seq.rows > 6 and not _seq.muted[6]: _music.play_row(6, 4)
-		KEY_8: if _seq.rows > 7 and not _seq.muted[7]: _music.play_row(7, 4)
-		KEY_9: if _seq.rows > 8 and not _seq.muted[8]: _music.play_row(8, 4)
-		KEY_0: if _seq.rows > 9 and not _seq.muted[9]: _music.play_row(9, 4)
 		KEY_SPACE:
 			_on_play_stop()
 			get_viewport().set_input_as_handled()
 
-
-# ── Confirm popup ─────────────────────────────────────────────────────────────
-
-func _open_confirm_popup(title: String, body: String, ok_label: String, on_confirm: Callable) -> void:
-	_close_confirm_popup()
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.55)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.z_index = 20
-	add_child(backdrop)
-	_confirm_popup_backdrop = backdrop
-	var popup: ConfirmPopup = CONFIRM_POPUP_SCENE.instantiate()
-	popup.z_index = 21
-	popup.confirmed.connect(on_confirm)
-	popup.tree_exited.connect(_close_confirm_popup)
-	add_child(popup)
-	popup.setup(title, body, ok_label)
-	popup.position_near(get_viewport_rect().size)
-	_confirm_popup = popup
-
-
-func _close_confirm_popup() -> void:
-	if is_instance_valid(_confirm_popup):
-		_confirm_popup.queue_free()
-	if is_instance_valid(_confirm_popup_backdrop):
-		_confirm_popup_backdrop.queue_free()
-	_confirm_popup          = null
-	_confirm_popup_backdrop = null
-
-
-# ── Help popup ────────────────────────────────────────────────────────────────
-
-func _open_help_popup() -> void:
-	if _help_popup != null:
-		_close_help_popup()
-		return
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.45)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.z_index = 10
-	backdrop.gui_input.connect(func(e: InputEvent) -> void:
-		if (e is InputEventMouseButton and e.pressed) or \
-		   (e is InputEventScreenTouch and e.pressed):
-			_close_help_popup()
-	)
-	add_child(backdrop)
-	_help_popup_backdrop = backdrop
-	var popup: HelpPopup = HELP_POPUP_SCENE.instantiate()
-	popup.z_index = 11
-	popup.get_node("Margin/VBox/TitleRow/CloseBtn").pressed.connect(_close_help_popup)
-	add_child(popup)
-	popup.position_near(get_viewport_rect().size)
-	_help_popup = popup
-
-
-func _close_help_popup() -> void:
-	if is_instance_valid(_help_popup):
-		_help_popup.queue_free()
-	if is_instance_valid(_help_popup_backdrop):
-		_help_popup_backdrop.queue_free()
-	_help_popup          = null
-	_help_popup_backdrop = null
+	for i in range(mini(_seq.rows, 10)):
+		if event.keycode == _KEY_ROW_MAP[i] and not _seq.muted[i]:
+			_music.play_row(i, 4)
 
 
 # ── Navigation ────────────────────────────────────────────────────────────────

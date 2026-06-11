@@ -56,6 +56,53 @@ corner_radius_bottom_left = 10
 shadow_color = Color(0, 0.83, 1, 0.65)
 shadow_size = 14
 
+[sub_resource type="StyleBoxFlat" id="row_panel_style"]
+bg_color = Color(0.02, 0.02, 0.052, 1)
+border_width_right = 2
+border_color = Color(0, 0.83, 1, 0.32)
+
+[sub_resource type="StyleBoxFlat" id="step_n"]
+bg_color = Color(0.03, 0.1, 0.08, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 0.85)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.35)
+shadow_size = 7
+
+[sub_resource type="StyleBoxFlat" id="step_p"]
+bg_color = Color(0, 0.28, 0.22, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.2)
+shadow_size = 3
+
+[sub_resource type="StyleBoxFlat" id="step_h"]
+bg_color = Color(0, 0.18, 0.14, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.88, 0.72, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0.88, 0.72, 0.65)
+shadow_size = 14
+
 [sub_resource type="StyleBoxFlat" id="play_n"]
 bg_color = Color(0, 0.1, 0.06, 0.97)
 border_width_left = 2
@@ -182,48 +229,6 @@ corner_radius_bottom_left = 10
 shadow_color = Color(0, 1, 0.55, 0.65)
 shadow_size = 14
 
-[sub_resource type="StyleBoxFlat" id="step_n"]
-bg_color = Color(0.03, 0.1, 0.08, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 0.85)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.35)
-shadow_size = 7
-
-[sub_resource type="StyleBoxFlat" id="step_p"]
-bg_color = Color(0, 0.28, 0.22, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.2)
-shadow_size = 3
-
-[sub_resource type="StyleBoxFlat" id="step_h"]
-bg_color = Color(0, 0.18, 0.14, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.88, 0.72, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0.88, 0.72, 0.65)
-shadow_size = 14
-
 [sub_resource type="StyleBoxFlat" id="tap_n"]
 bg_color = Color(0.1, 0.07, 0, 0.97)
 border_width_left = 2
@@ -265,6 +270,32 @@ corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 shadow_color = Color(1, 0.72, 0, 0.65)
 shadow_size = 14
+
+[sub_resource type="StyleBoxFlat" id="add_row_n"]
+bg_color = Color(0.04, 0.08, 0.12, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="add_row_h"]
+bg_color = Color(0.06, 0.12, 0.18, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.83, 1, 0.8)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0.83, 1, 0.3)
+shadow_size = 5
 
 [sub_resource type="StyleBoxFlat" id="sla_n"]
 bg_color = Color(0.05, 0.05, 0.09, 0.97)
@@ -536,37 +567,6 @@ corner_radius_bottom_left = 10
 shadow_color = Color(0, 0.83, 1, 0.25)
 shadow_size = 4
 
-[sub_resource type="StyleBoxFlat" id="row_panel_style"]
-bg_color = Color(0.02, 0.02, 0.052, 1)
-border_width_right = 2
-border_color = Color(0, 0.83, 1, 0.32)
-
-[sub_resource type="StyleBoxFlat" id="add_row_n"]
-bg_color = Color(0.04, 0.08, 0.12, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.83, 1, 0.5)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="add_row_h"]
-bg_color = Color(0.06, 0.12, 0.18, 0.97)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0, 0.83, 1, 0.8)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0, 0.83, 1, 0.3)
-shadow_size = 5
-
 [node name="Main" type="Control" unique_id=45960669]
 layout_mode = 3
 anchors_preset = 15
@@ -658,7 +658,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("row_panel_style")
-vertical_scroll_mode = 2
 horizontal_scroll_mode = 0
 
 [node name="RowMargin" type="MarginContainer" parent="MainPanel/VBox/GridRow/RowPanel" unique_id=1000000003]
@@ -689,6 +688,7 @@ theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 10
 
 [node name="StepVBox" type="VBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter" unique_id=1000000024]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="StepNumRow" type="HBoxContainer" parent="MainPanel/VBox/GridRow/StepArea/StepOuter/StepVBox" unique_id=1000000025]
@@ -892,13 +892,13 @@ theme_override_styles/pressed = SubResource("step_p")
 theme_override_styles/hover = SubResource("step_h")
 text = "RANDOM"
 
-[node name="VSep5" type="ColorRect" parent="MainPanel/VBox/ControlsContainer"]
+[node name="VSep5" type="ColorRect" parent="MainPanel/VBox/ControlsContainer" unique_id=565511791]
 custom_minimum_size = Vector2(1, 56)
 layout_mode = 2
 size_flags_vertical = 4
 color = Color(0, 0.83, 1, 0.18)
 
-[node name="AddRowButton" type="Button" parent="MainPanel/VBox/ControlsContainer"]
+[node name="AddRowButton" type="Button" parent="MainPanel/VBox/ControlsContainer" unique_id=1246721524]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 48)
 layout_mode = 2
@@ -1052,4 +1052,3 @@ layout_mode = 2
 wait_time = 0.25
 
 [connection signal="pressed" from="MainPanel/VBox/GameName/HBoxContainer/MenuButton" to="." method="_on_menu_button_pressed"]
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

@@ -8,6 +8,7 @@ const MAX_PLAYERS := 10
 var _players: Array[AudioStreamPlayer] = []
 var _master_volume_db: float = 0.0
 var _parent: Node = null
+var _stream_cache: Dictionary = {}
 
 
 func setup(parent: Node) -> void:
@@ -34,9 +35,9 @@ func set_master_volume(volume_db: float) -> void:
 func set_stream(row: int, path: String) -> void:
 	if row >= _players.size():
 		return
-	var stream = load(path)
-	if stream:
-		_players[row].stream = stream
+	if not _stream_cache.has(path):
+		_stream_cache[path] = load(path)
+	_players[row].stream = _stream_cache[path]
 
 
 func play_row(row: int, velocity: int) -> void:

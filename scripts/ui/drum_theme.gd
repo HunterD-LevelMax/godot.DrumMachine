@@ -25,6 +25,9 @@ const ROW_NAMES: Array[String] = [
 
 const MAX_VISIBLE_ROWS := 10
 
+static var _mute_style_cache: Dictionary = {}
+static var _slot_style_cache: Dictionary = {}
+
 
 static func row_color(index: int) -> Color:
 	return ROW_COLORS[index % ROW_COLORS.size()]
@@ -69,6 +72,9 @@ static func step_styles(velocity: int, row: int, is_beat: bool) -> Array[StyleBo
 # ── Mute buttons ──────────────────────────────────────────────────────────────
 
 static func mute_style(is_muted: bool, row: int) -> StyleBoxFlat:
+	var key := Vector2i(int(is_muted), row)
+	if _mute_style_cache.has(key):
+		return _mute_style_cache[key]
 	var color := ROW_COLORS[row % ROW_COLORS.size()]
 	var s     := StyleBoxFlat.new()
 	s.set_corner_radius_all(8)
@@ -82,12 +88,16 @@ static func mute_style(is_muted: bool, row: int) -> StyleBoxFlat:
 		s.bg_color     = Color(0.06, 0.06, 0.09)
 		s.border_color = color.darkened(0.55)
 		s.set_border_width_all(1)
+	_mute_style_cache[key] = s
 	return s
 
 
 # ── Save slot buttons ─────────────────────────────────────────────────────────
 
 static func slot_style(row: int, is_active: bool, has_data: bool) -> StyleBoxFlat:
+	var key := Vector3i(row, int(is_active), int(has_data))
+	if _slot_style_cache.has(key):
+		return _slot_style_cache[key]
 	var color := ROW_COLORS[row % ROW_COLORS.size()]
 	var s     := StyleBoxFlat.new()
 	s.set_corner_radius_all(10)
@@ -100,6 +110,7 @@ static func slot_style(row: int, is_active: bool, has_data: bool) -> StyleBoxFla
 	else:
 		s.bg_color     = Color(0.05, 0.05, 0.09)
 		s.border_color = color.darkened(0.3 if has_data else 0.6)
+	_slot_style_cache[key] = s
 	return s
 
 

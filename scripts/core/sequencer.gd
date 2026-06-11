@@ -35,6 +35,8 @@ var steps: int   = DEFAULT_STEPS
 var current_step: int  = 0
 var is_playing:   bool = true
 
+var _velocities_cache: Array[int] = []
+
 
 func _init() -> void:
 	_init_defaults()
@@ -115,11 +117,12 @@ func cycle_velocity(row: int, step: int) -> int:
 
 
 ## Returns velocity for each row at the current step, honouring mute flags.
+## Reuses a pre-allocated array to avoid per-tick allocation.
 func current_step_velocities() -> Array[int]:
-	var result: Array[int] = []
+	_velocities_cache.resize(rows)
 	for row in range(rows):
-		result.append(grid[row][current_step] if not muted[row] else 0)
-	return result
+		_velocities_cache[row] = grid[row][current_step] if not muted[row] else 0
+	return _velocities_cache
 
 
 func advance() -> void:

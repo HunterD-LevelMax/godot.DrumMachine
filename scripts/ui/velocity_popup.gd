@@ -52,6 +52,14 @@ func position_near(btn_rect: Rect2, viewport_size: Vector2) -> void:
 		clampf(px, 8.0, viewport_size.x - pop_sz.x - 8.0),
 		clampf(py, 8.0, viewport_size.y - pop_sz.y - 8.0)
 	)
+	scale = Vector2(0.85, 0.85)
+	modulate.a = 0.0
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.set_parallel(true)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.18)
+	tween.tween_property(self, "modulate:a", 1.0, 0.12)
 
 
 func _on_velocity_chosen(v: int) -> void:
