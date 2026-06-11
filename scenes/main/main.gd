@@ -3,7 +3,6 @@
 extends Control
 
 const LONG_PRESS_SEC := 0.45
-const MAX_TAP_COUNT  := 8
 
 const PLAYHEAD_HEIGHT := 4
 
@@ -44,13 +43,14 @@ var _history: PatternHistory = null
 var _music:   MusicManager
 var _grid:    StepGridBuilder
 var _popups:  PopupManager
+var _slots:   SlotManager
+var _tap:     TapTempo
+var _mute:    MuteController
 
 var _row_labels:    Array = []
 var _row_snd_btns:  Array = []
 var _row_mute_btns: Array = []
 
-var _active_slot:  int   = 0
-var _slot_buttons: Array = []
 var _syncing_scroll: bool = false
 
 var _lp_timer:    Timer
@@ -59,12 +59,8 @@ var _lp_step:     int  = -1
 var _lp_fired:    bool = false
 var _lp_consumed: bool = false
 
-var _tap_times: Array[float] = []
-
 var _playhead: ColorRect
 var _playhead_glow: ColorRect
-var _label_mute_timer: Timer = null
-var _label_mute_row: int = -1
 
 var _flash_tweens: Dictionary = {}
 
@@ -80,9 +76,19 @@ func _ready() -> void:
 	_music   = MusicManager.new()
 	_grid    = StepGridBuilder.new()
 	_popups  = PopupManager.new()
+	_slots   = SlotManager.new()
+	_tap     = TapTempo.new()
+	_mute    = MuteController.new()
 	_popups.setup(self)
 	_music.setup(self)
 	_music.set_master_volume(GameSettings.master_volume_db)
+	_slots.setup(
+		self, _seq, _popups, _music, _history, _timer, _grid,
+		_rebuild_all_rows, _apply_sound_paths,
+		_refresh_tempo_label, _refresh_steps_label
+	)
+	_tap.setup(_seq, _timer)
+	_mute.setup(self, _seq)
 
 	_lp_timer           = Timer.new()
 	_lp_timer.one_shot  = true
@@ -104,7 +110,10 @@ func _ready() -> void:
 	_timer.start()
 
 	_connect_transport_buttons()
-	_init_slot_ui()
+	_slots.init(
+		_slot_btn_a, _slot_btn_b, _slot_btn_c, _slot_btn_d,
+		_save_btn, _load_btn, _inf_btn
+	)
 	_refresh_tempo_label()
 	_refresh_steps_label()
 	_refresh_play_button()
@@ -232,7 +241,7 @@ func _create_row_ui(row: int) -> void:
 	mute_btn.add_theme_stylebox_override("normal", mute_style)
 	mute_btn.add_theme_stylebox_override("pressed", mute_style)
 	mute_btn.add_theme_stylebox_override("hover", mute_style)
-	mute_btn.toggled.connect(_on_mute_toggled.bind(row))
+	mute_btn.toggled.connect(_mute.on_mute_toggled.bind(row))
 	cell.add_child(mute_btn)
 	_row_mute_btns.append(mute_btn)
 
@@ -243,7 +252,7 @@ func _create_row_ui(row: int) -> void:
 	label.add_theme_color_override("font_color", color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.modulate = Color(0.4, 0.4, 0.4) if _seq.muted[row] else Color(1, 1, 1)
-	label.gui_input.connect(_on_label_input.bind(row))
+	label.gui_input.connect(_mute.on_label_input.bind(row))
 	cell.add_child(label)
 	_row_labels.append(label)
 
@@ -315,48 +324,6 @@ func _on_add_row() -> void:
 			_seq.current_step = 0
 			_grid.set_prev_step(-1)
 			_timer.start()
-
-
-# ── Label long-press mute ─────────────────────────────────────────────────────
-
-func _on_label_input(event: InputEvent, row: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_cancel_label_mute_timer()
-		_label_mute_row = row
-		_label_mute_timer = Timer.new()
-		_label_mute_timer.one_shot = true
-		_label_mute_timer.wait_time = 0.5
-		_label_mute_timer.timeout.connect(_on_label_mute_timeout)
-		add_child(_label_mute_timer)
-		_label_mute_timer.start()
-	elif event is InputEventMouseButton and not event.pressed:
-		_cancel_label_mute_timer()
-	elif event is InputEventScreenTouch and event.pressed:
-		_cancel_label_mute_timer()
-		_label_mute_row = row
-		_label_mute_timer = Timer.new()
-		_label_mute_timer.one_shot = true
-		_label_mute_timer.wait_time = 0.5
-		_label_mute_timer.timeout.connect(_on_label_mute_timeout)
-		add_child(_label_mute_timer)
-		_label_mute_timer.start()
-	elif event is InputEventScreenTouch and not event.pressed:
-		_cancel_label_mute_timer()
-
-
-func _cancel_label_mute_timer() -> void:
-	if _label_mute_timer != null and _label_mute_timer.is_inside_tree():
-		_label_mute_timer.stop()
-		_label_mute_timer.queue_free()
-		_label_mute_timer = null
-	_label_mute_row = -1
-
-
-func _on_label_mute_timeout() -> void:
-	if _label_mute_row >= 0 and _label_mute_row < _seq.rows:
-		(_row_mute_btns[_label_mute_row] as Button).button_pressed = not _seq.muted[_label_mute_row]
-	_label_mute_row = -1
-	_cancel_label_mute_timer()
 
 
 # ── Connections ───────────────────────────────────────────────────────────────
@@ -474,20 +441,6 @@ func _on_sound_selected(row: int, path: String) -> void:
 func _apply_sound_paths() -> void:
 	for row in range(_seq.rows):
 		_music.set_stream(row, _seq.sound_paths[row])
-
-
-# ── Mute ──────────────────────────────────────────────────────────────────────
-
-func _on_mute_toggled(pressed: bool, row: int) -> void:
-	_seq.muted[row] = pressed
-	var lbl: Label = _row_labels[row]
-	var target_color := Color(0.4, 0.4, 0.4) if pressed else Color(1, 1, 1)
-	var tween := lbl.create_tween()
-	tween.tween_property(lbl, "modulate", target_color, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	var mute_style := DrumTheme.mute_style(pressed, row)
-	(_row_mute_btns[row] as Button).add_theme_stylebox_override("normal", mute_style)
-	(_row_mute_btns[row] as Button).add_theme_stylebox_override("pressed", mute_style)
-	(_row_mute_btns[row] as Button).add_theme_stylebox_override("hover", mute_style)
 
 
 # ── Sequencer tick ────────────────────────────────────────────────────────────
@@ -621,99 +574,6 @@ func _redo() -> void:
 		_timer.start()
 
 
-# ── Save / Load ───────────────────────────────────────────────────────────────
-
-func _on_save_pressed() -> void:
-	if SaveManager.slot_exists(_active_slot):
-		_popups.open_confirm(
-			"SAVE TO SLOT %s?" % SaveManager.SLOT_NAMES[_active_slot],
-			"This will overwrite your existing pattern.",
-			"OVERWRITE",
-			_do_save
-		)
-	else:
-		_do_save()
-
-
-func _do_save() -> void:
-	_popups.close_confirm()
-	SaveManager.save(_active_slot, _seq.to_dict())
-	_refresh_slot_buttons()
-
-
-func _on_load_pressed() -> void:
-	var data := SaveManager.load_slot(_active_slot)
-	if data.is_empty():
-		return
-	var was_playing := _seq.is_playing
-	if was_playing:
-		_seq.is_playing = false
-		_timer.stop()
-	_history.push(_seq.get_grid_snapshot())
-	_seq.from_dict(data)
-	_rebuild_all_rows()
-	_apply_sound_paths()
-	_timer.wait_time = _seq.timer_interval()
-	_refresh_tempo_label()
-	_refresh_steps_label()
-	_refresh_slot_buttons()
-	if was_playing:
-		_seq.is_playing = true
-		_seq.current_step = 0
-		_grid.set_prev_step(-1)
-		_timer.start()
-
-
-# ── Slot UI ───────────────────────────────────────────────────────────────────
-
-func _init_slot_ui() -> void:
-	_slot_buttons = [_slot_btn_a, _slot_btn_b, _slot_btn_c, _slot_btn_d]
-	for i in range(4):
-		_slot_buttons[i].focus_mode = Control.FOCUS_NONE
-		_slot_buttons[i].pressed.connect(_on_slot_selected.bind(i))
-	_apply_action_button(_save_btn, Color("#FFD54A"))
-	_apply_action_button(_load_btn, Color("#1FB6FF"))
-	_save_btn.pressed.connect(_on_save_pressed)
-	_load_btn.pressed.connect(_on_load_pressed)
-	_inf_btn.pressed.connect(_popups.open_help)
-	_refresh_slot_buttons()
-
-
-func _on_slot_selected(slot: int) -> void:
-	_active_slot = slot
-	_refresh_slot_buttons()
-	var btn: Button = _slot_buttons[slot]
-	var tw := btn.create_tween()
-	tw.set_ease(Tween.EASE_OUT)
-	tw.set_trans(Tween.TRANS_ELASTIC)
-	tw.tween_property(btn, "scale", Vector2(0.88, 0.88), 0.04)
-	tw.tween_property(btn, "scale", Vector2.ONE, 0.14)
-
-
-func _refresh_slot_buttons() -> void:
-	for i in range(_slot_buttons.size()):
-		var is_active := i == _active_slot
-		var has_data  := SaveManager.slot_exists(i)
-		var btn: Button = _slot_buttons[i]
-		btn.button_pressed = is_active
-		var s := DrumTheme.slot_style(i, is_active, has_data)
-		btn.add_theme_stylebox_override("normal",  s)
-		btn.add_theme_stylebox_override("pressed", s)
-		btn.add_theme_stylebox_override("hover",   s)
-		btn.add_theme_color_override("font_color",
-			Color(1, 1, 1) if is_active
-			else (DrumTheme.ROW_COLORS[i].darkened(0.1) if has_data else Color(0.28, 0.28, 0.28)))
-		btn.text = SaveManager.SLOT_NAMES[i] + ("•" if has_data else "")
-
-
-func _apply_action_button(btn: Button, color: Color) -> void:
-	var styles := DrumTheme.action_button_styles(color)
-	btn.add_theme_stylebox_override("normal",  styles[0])
-	btn.add_theme_stylebox_override("hover",   styles[1])
-	btn.add_theme_stylebox_override("pressed", styles[2])
-	btn.add_theme_color_override("font_color", color)
-
-
 # ── Tempo ─────────────────────────────────────────────────────────────────────
 
 func _on_increase_tempo() -> void:
@@ -788,22 +648,8 @@ func _resume_after_rebuild() -> void:
 # ── Tap Tempo ─────────────────────────────────────────────────────────────────
 
 func _on_tap_tempo() -> void:
-	var now := Time.get_ticks_msec() / 1000.0
-	if not _tap_times.is_empty() and (now - _tap_times[-1]) > 3.0:
-		_tap_times.clear()
-	_tap_times.append(now)
-	if _tap_times.size() > MAX_TAP_COUNT:
-		_tap_times.remove_at(0)
-	if _tap_times.size() >= 2:
-		var total := 0.0
-		for i in range(1, _tap_times.size()):
-			total += _tap_times[i] - _tap_times[i - 1]
-		_seq.tempo = clampi(
-			int(round(60.0 / (total / (_tap_times.size() - 1)))),
-			Sequencer.MIN_TEMPO, Sequencer.MAX_TEMPO
-		)
-		_timer.wait_time = _seq.timer_interval()
-		_refresh_tempo_label()
+	_tap.on_tap()
+	_refresh_tempo_label()
 
 
 # ── Keyboard input ────────────────────────────────────────────────────────────
